@@ -3,6 +3,8 @@ name: Lint
 on:
   push:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [ master ]
 
 jobs:
   lint:
