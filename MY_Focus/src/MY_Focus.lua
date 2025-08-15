@@ -883,7 +883,11 @@ function D.GetDisplayList()
 						end
 						if bRuleFocus then
 							--2025.8.16�������ؽ��㷽������������������ж��������Ƿ�Ϊ-1����Ϊ-1����ʾ���㲢�����������
+<<<<<<< HEAD
 							bFocus = via.tRule.nMaxDistance ~= -1
+=======
+							if via.tRule.nMaxDistance == -1 then bFocus = false else bFocus = true end
+>>>>>>> 4a64400cb (fix: 焦点列表增加隐藏焦点方法，当满足规则（血量百分比、目标关系）时，判断最大距离（nMaxDistance）是否为-1，若为-1则不显示焦点并跳出后续规则遍历。)
 							tRule = via.tRule
 							szVia = via.szVia
 							bDeletable = via.bDeletable
