@@ -1,0 +1,129 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '要发布的版本号'
+        required: true
+        default: |
+          0.0.0
+        type: string
+      changelog:
+        description: '更新日志（子插件壹：更新内容|子插件贰：更新内容）'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: Publish
+      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.event.inputs.version }}
+
+    steps:
+      - name: Checkout full repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install pip dependencies
+        run: |
+          pip3 install semver luadata
+
+      - name: Install apt dependencies
+        run: |
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt install --no-install-recommends lua5.1 p7zip-full
+
+      - name: Set up Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Switch and hard reset to master
+        run: |
+          git fetch origin
+          git checkout master
+          git reset --hard origin/master
+
+      - name: Check version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          CURRENT_VERSION=$(grep "_VERSION_.*'.*'" MY_!Base/src/lib/Base.lua | sed -E "s/.*'(.*)'.*/\1/")
+          python3 -c "
+          import semver
+          try:
+            if not semver.compare('$VERSION', '$CURRENT_VERSION') > 0:
+              print('::error::New version $VERSION must be greater than current version $CURRENT_VERSION')
+              exit(1)
+          except ValueError as e:
+            print('::error::Invalid version format. Both versions must be in format X.Y.Z')
+            exit(1)
+          "
+
+      - name: Update Base.lua version and build
+        run: |
+          DATE=$(date +%Y%m%d)
+          VERSION="${{ github.event.inputs.version }}"
+          sed -i "s/\(local _BUILD_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${DATE}'/" MY_!Base/src/lib/Base.lua
+          sed -i "s/\(local _VERSION_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${VERSION}'/" MY_!Base/src/lib/Base.lua
+
+      - name: Update CHANGELOG.md
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          CHANGELOG="${{ github.event.inputs.changelog }}"
+          TMPFILE=$(mktemp)
+          echo "# 更新日志" > $TMPFILE
+          echo "" >> $TMPFILE
+          echo "## 茗伊插件集 v${VERSION}" >> $TMPFILE
+          echo "" >> $TMPFILE
+          echo "$CHANGELOG" | tr '|' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/^["""]//g' | sed 's/["""]$//g' | sed 's/[：:]/] /g' | sed 's/^/* [/g' >> $TMPFILE
+          echo "" >> $TMPFILE
+          tail -n +3 CHANGELOG.md >> $TMPFILE
+          mv $TMPFILE CHANGELOG.md
+
+      - name: Write secret to file
+        run: |
+          cat > secret.jx3dat << 'EOF'
+          ${{ secrets.SECRET_JX3DAT }}
+          EOF
+
+      - name: Commit release changes
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          git add -A
+          git commit -m "release: ${VERSION}" || echo "No changes to commit"
+
+      - name: Run Build Command
+        run: |
+          python3 \!src-dist/ci.py
+
+      - name: Push commits
+        run: |
+          git push -f origin master:stable
+
+      - name: Create release branch and PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          BRANCH="release/v${VERSION}"
+          git checkout -b $BRANCH
+          git push -u origin $BRANCH -f
+          gh pr create \
+            --title "release: v${VERSION}" \
+            --body "Automated release PR for version ${VERSION}" \
+            --base master \
+            --head $BRANCH || echo "PR already exists or failed to create, continuing..."
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-archives-${{ github.run_number }}-${{ github.sha }}
+          path: '\!src-dist/dist/*.7z'

@@ -108,6 +108,9 @@ def main() -> None:
     parser.add_argument(
         "--dry-run", action="store_true", help="仅演示，不实际推送 tag。"
     )
+    parser.add_argument(
+        "--skip-branch-check", action="store_true", help="跳过分支检查和 rebase 操作。"
+    )
     args = parser.parse_args()
 
     # 切换当前工作目录为包所在目录
@@ -121,9 +124,12 @@ def main() -> None:
         git.is_clean(), "错误：切换到 master 分支后存在未提交的文件变更！"
     )
 
-    # 与 stable 分支 rebase，保证提交记录干净
-    subprocess.run(["git", "rebase", "stable"], check=True)
-    utils.assert_exit(git.is_clean(), "错误：请解决冲突并先清除未提交变更后再重试！")
+    if not args.skip_branch_check:
+        # 与 stable 分支 rebase，保证提交记录干净
+        subprocess.run(["git", "rebase", "stable"], check=True)
+        utils.assert_exit(
+            git.is_clean(), "错误：请解决冲突并先清除未提交变更后再重试！"
+        )
 
     print("正在读取 CHANGELOG 和版本列表...")
     changelog_list = __get_changelog_list()
