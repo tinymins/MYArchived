@@ -1,8 +1,8 @@
 --------------------------------------------------------------------------------
 -- This file is part of the JX3 Mingyi Plugin.
 -- @link     : https://jx3.derzh.com/
--- @desc     : ½¹µãÁĞ±í
--- @author   : ÜøÒÁ @Ë«ÃÎÕò @×··çõæÓ°
+-- @desc     : ç„¦ç‚¹åˆ—è¡¨
+-- @author   : èŒ—ä¼Š @åŒæ¢¦é•‡ @è¿½é£è¹‘å½±
 -- @modifier : Emil Zhai (root@derzh.com)
 -- @copyright: Copyright (c) 2013 EMZ Kingsoft Co., Ltd.
 --------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ X.RegisterRestriction('MY_Focus.SHILDED_NPC', { ['*'] = true })
 X.RegisterRestriction('MY_Focus.CHANGGE_SHADOW', { ['*'] = true })
 --------------------------------------------------------------------------
 
-local CHANGGE_REAL_SHADOW_TPLID = 46140 -- Çå¾ø¸èÓ° µÄÖ÷ÌåÓ°×Ó
+local CHANGGE_REAL_SHADOW_TPLID = 46140 -- æ¸…ç»æ­Œå½± çš„ä¸»ä½“å½±å­
 local FOCUS_LIST = {}
 local TEAMMON_FOCUS = {}
 local l_tTempFocusList = {
@@ -33,7 +33,7 @@ local l_tTempFocusList = {
 	[TARGET.DOODAD] = {},   -- dwTemplateID
 }
 local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
-	bEnable = { -- ÊÇ·ñÆôÓÃ
+	bEnable = { -- æ˜¯å¦å¯ç”¨
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -42,7 +42,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bMinimize = { -- ÊÇ·ñ×îĞ¡»¯
+	bMinimize = { -- æ˜¯å¦æœ€å°åŒ–
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -51,7 +51,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bAutoHide = { -- ÎŞ½¹µãÊ±Òş²Ø
+	bAutoHide = { -- æ— ç„¦ç‚¹æ—¶éšè—
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -60,7 +60,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
 	},
-	nMaxDisplay = { -- ×î´óÏÔÊ¾ÊıÁ¿
+	nMaxDisplay = { -- æœ€å¤§æ˜¾ç¤ºæ•°é‡
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -69,7 +69,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Number,
 		xDefaultValue = 5,
 	},
-	fScaleX = { -- Ëõ·Å±ÈÀı
+	fScaleX = { -- ç¼©æ”¾æ¯”ä¾‹
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -78,7 +78,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Number,
 		xDefaultValue = 1,
 	},
-	fScaleY = { -- Ëõ·Å±ÈÀı
+	fScaleY = { -- ç¼©æ”¾æ¯”ä¾‹
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -87,7 +87,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Number,
 		xDefaultValue = 1,
 	},
-	anchor = { -- Ä¬ÈÏ×ø±ê
+	anchor = { -- é»˜è®¤åæ ‡
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -96,7 +96,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.FrameAnchor,
 		xDefaultValue = { x=-300, y=220, s='TOPRIGHT', r='TOPRIGHT' },
 	},
-	bFocusINpc = { -- ½¹µãÖØÒªNPC
+	bFocusINpc = { -- ç„¦ç‚¹é‡è¦NPC
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -105,7 +105,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
 	},
-	bFocusFriend = { -- ½¹µã¸½½üºÃÓÑ
+	bFocusFriend = { -- ç„¦ç‚¹é™„è¿‘å¥½å‹
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -114,7 +114,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bFocusTong = { -- ½¹µã°ï»á³ÉÔ±
+	bFocusTong = { -- ç„¦ç‚¹å¸®ä¼šæˆå‘˜
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -123,7 +123,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bOnlyPublicMap = { -- ½öÔÚ¹«¹²µØÍ¼½¹µãºÃÓÑ°ï»á³ÉÔ±
+	bOnlyPublicMap = { -- ä»…åœ¨å…¬å…±åœ°å›¾ç„¦ç‚¹å¥½å‹å¸®ä¼šæˆå‘˜
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -132,7 +132,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
 	},
-	bSortByDistance = { -- ÓÅÏÈ½¹µã½ü¾àÀëÄ¿±ê
+	bSortByDistance = { -- ä¼˜å…ˆç„¦ç‚¹è¿‘è·ç¦»ç›®æ ‡
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -141,7 +141,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bFocusEnemy = { -- ½¹µãµĞ¶ÔÍæ¼Ò
+	bFocusEnemy = { -- ç„¦ç‚¹æ•Œå¯¹ç©å®¶
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -150,7 +150,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bFocusPlayerRemark = { -- ½¹µã½ÇÉ«±¸×¢¼ÇÂ¼ÔÚ°¸µÄÄ¿±ê
+	bFocusPlayerRemark = { -- ç„¦ç‚¹è§’è‰²å¤‡æ³¨è®°å½•åœ¨æ¡ˆçš„ç›®æ ‡
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -159,7 +159,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
 	},
-	bAutoFocus = { -- ÆôÓÃÄ¬ÈÏ½¹µã
+	bAutoFocus = { -- å¯ç”¨é»˜è®¤ç„¦ç‚¹
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -168,7 +168,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
 	},
-	bTeamMonFocus = { -- ÆôÓÃÍÅ¶Ó¼à¿Ø½¹µã
+	bTeamMonFocus = { -- å¯ç”¨å›¢é˜Ÿç›‘æ§ç„¦ç‚¹
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -177,7 +177,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
 	},
-	bHideDeath = { -- Òş²ØËÀÍöÄ¿±ê
+	bHideDeath = { -- éšè—æ­»äº¡ç›®æ ‡
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -186,7 +186,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bDisplayKungfuIcon = { -- ÏÔÊ¾ĞÄ·¨Í¼±ê
+	bDisplayKungfuIcon = { -- æ˜¾ç¤ºå¿ƒæ³•å›¾æ ‡
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -195,7 +195,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bFocusJJCParty = { -- ½¹µãÃû½£´ó»á¶ÓÓÑ
+	bFocusJJCParty = { -- ç„¦ç‚¹åå‰‘å¤§ä¼šé˜Ÿå‹
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -204,7 +204,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bFocusJJCEnemy = { -- ½¹µãÃû½£´ó»áµĞ¶Ó
+	bFocusJJCEnemy = { -- ç„¦ç‚¹åå‰‘å¤§ä¼šæ•Œé˜Ÿ
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -213,7 +213,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
 	},
-	bShowTarget = { -- ÏÔÊ¾Ä¿±êÄ¿±ê
+	bShowTarget = { -- æ˜¾ç¤ºç›®æ ‡ç›®æ ‡
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -222,7 +222,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	szDistanceType = { -- ×ø±ê¾àÀë¼ÆËã·½Ê½
+	szDistanceType = { -- åæ ‡è·ç¦»è®¡ç®—æ–¹å¼
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -231,7 +231,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.String,
 		xDefaultValue = 'global',
 	},
-	bHealHelper = { -- ¸¨ÖúÖÎÁÆÄ£Ê½
+	bHealHelper = { -- è¾…åŠ©æ²»ç–—æ¨¡å¼
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -240,7 +240,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bShowTipRB = { -- ÔÚÆÁÄ»ÓÒÏÂ½ÇÏÔÊ¾ĞÅÏ¢
+	bShowTipRB = { -- åœ¨å±å¹•å³ä¸‹è§’æ˜¾ç¤ºä¿¡æ¯
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -249,7 +249,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	bEnableSceneNavi = { -- ³¡¾°×·×Ùµã
+	bEnableSceneNavi = { -- åœºæ™¯è¿½è¸ªç‚¹
 		ePathType = X.PATH_TYPE.ROLE,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -258,7 +258,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
 	},
-	aPatternFocus = { -- Ä¬ÈÏ½¹µã
+	aPatternFocus = { -- é»˜è®¤ç„¦ç‚¹
 		ePathType = X.PATH_TYPE.GLOBAL,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -289,7 +289,7 @@ local O = X.CreateUserSettingsModule('MY_Focus', _L['Target'], {
 		})),
 		xDefaultValue = {},
 	},
-	tStaticFocus = { -- ÓÀ¾Ã½¹µã
+	tStaticFocus = { -- æ°¸ä¹…ç„¦ç‚¹
 		ePathType = X.PATH_TYPE.SERVER,
 		szLabel = _L['MY_Focus'],
 		szDescription = X.MakeCaption({
@@ -385,7 +385,7 @@ function D.LoadConfig()
 		CPath.DelFile(szPath)
 		if config then
 			for k, v in pairs(config) do
-				-- ÓÀ¾Ã½¹µãÓëÄ¬ÈÏ½¹µãÊı¾İĞèÒªºÏ²¢´¦Àí
+				-- æ°¸ä¹…ç„¦ç‚¹ä¸é»˜è®¤ç„¦ç‚¹æ•°æ®éœ€è¦åˆå¹¶å¤„ç†
 				if k == 'tStaticFocus' then
 					for _, eType in ipairs({ TARGET.PLAYER, TARGET.NPC, TARGET.DOODAD }) do
 						if not X.IsTable(v[eType]) then
@@ -404,7 +404,7 @@ function D.LoadConfig()
 			end
 		end
 	end
-	-- É¨Ãè¸½½üÍæ¼Ò
+	-- æ‰«æé™„è¿‘ç©å®¶
 	D.RescanNearby()
 end
 
@@ -424,7 +424,7 @@ function D.GetAllFocusPattern()
 	return X.Clone(O.aPatternFocus)
 end
 
--- Ìí¼Ó¡¢ĞŞ¸ÄÄ¬ÈÏ½¹µã
+-- æ·»åŠ ã€ä¿®æ”¹é»˜è®¤ç„¦ç‚¹
 function D.SetFocusPattern(szPattern, tData)
 	local nIndex
 	szPattern = X.TrimString(szPattern)
@@ -435,12 +435,12 @@ function D.SetFocusPattern(szPattern, tData)
 			O.aPatternFocus = O.aPatternFocus
 		end
 	end
-	-- ¸ñÊ½»¯Êı¾İ
+	-- æ ¼å¼åŒ–æ•°æ®
 	if not X.IsTable(tData) then
 		tData = { szPattern = szPattern }
 	end
 	tData = D.FormatAutoFocusData(tData)
-	-- ¸üĞÂ½¹µãÁĞ±í
+	-- æ›´æ–°ç„¦ç‚¹åˆ—è¡¨
 	if nIndex then
 		table.insert(O.aPatternFocus, nIndex, tData)
 		O.aPatternFocus = O.aPatternFocus
@@ -452,7 +452,7 @@ function D.SetFocusPattern(szPattern, tData)
 	return tData
 end
 
--- É¾³ıÄ¬ÈÏ½¹µã
+-- åˆ é™¤é»˜è®¤ç„¦ç‚¹
 function D.RemoveFocusPattern(szPattern)
 	local p
 	for i = #O.aPatternFocus, 1, -1 do
@@ -465,9 +465,9 @@ function D.RemoveFocusPattern(szPattern)
 	if not p then
 		return
 	end
-	-- Ë¢ĞÂUI
+	-- åˆ·æ–°UI
 	if p.szMethod == 'NAME' then
-		-- È«×Ö·ûÆ¥ÅäÄ£Ê½£º¼ì²éÊÇ·ñÔÚÓÀ¾Ã½¹µãÖĞ Ã»ÓĞÔòÉ¾³ıHandle £¨½ÚÔ¼ĞÔÄÜ£©
+		-- å…¨å­—ç¬¦åŒ¹é…æ¨¡å¼ï¼šæ£€æŸ¥æ˜¯å¦åœ¨æ°¸ä¹…ç„¦ç‚¹ä¸­ æ²¡æœ‰åˆ™åˆ é™¤Handle ï¼ˆèŠ‚çº¦æ€§èƒ½ï¼‰
 		for i = #FOCUS_LIST, 1, -1 do
 			local p = FOCUS_LIST[i]
 			local KObject = X.GetTargetHandle(p.dwType, p.dwID)
@@ -479,12 +479,12 @@ function D.RemoveFocusPattern(szPattern)
 			end
 		end
 	else
-		-- ÆäËûÄ£Ê½£ºÖØ»æ½¹µãÁĞ±í
+		-- å…¶ä»–æ¨¡å¼ï¼šé‡ç»˜ç„¦ç‚¹åˆ—è¡¨
 		D.RescanNearby()
 	end
 end
 
--- Ìí¼ÓID½¹µã
+-- æ·»åŠ IDç„¦ç‚¹
 function D.SetFocusID(dwType, dwID, bSave)
 	dwType, dwID = tonumber(dwType), tonumber(dwID)
 	if bSave then
@@ -505,7 +505,7 @@ function D.SetFocusID(dwType, dwID, bSave)
 	end
 end
 
--- É¾³ıID½¹µã
+-- åˆ é™¤IDç„¦ç‚¹
 function D.RemoveFocusID(dwType, dwID)
 	dwType, dwID = tonumber(dwType), tonumber(dwID)
 	if l_tTempFocusList[dwType][dwID] then
@@ -521,13 +521,13 @@ function D.RemoveFocusID(dwType, dwID)
 	end
 end
 
--- Çå¿Õ½¹µãÁĞ±í
+-- æ¸…ç©ºç„¦ç‚¹åˆ—è¡¨
 function D.ClearFocus()
 	FOCUS_LIST = {}
 	FireUIEvent('MY_FOCUS_UPDATE')
 end
 
--- ÖØĞÂÉ¨Ãè¸½½ü¶ÔÏó¸üĞÂ½¹µãÁĞ±í£¨Ö»Ôö²»¼õ£©
+-- é‡æ–°æ‰«æé™„è¿‘å¯¹è±¡æ›´æ–°ç„¦ç‚¹åˆ—è¡¨ï¼ˆåªå¢ä¸å‡ï¼‰
 function D.ScanNearby()
 	for _, dwID in ipairs(X.GetNearPlayerID()) do
 		D.OnObjectEnterScene(TARGET.PLAYER, dwID)
@@ -540,7 +540,7 @@ function D.ScanNearby()
 	end
 end
 
--- ÖØĞÂÉ¨Ãè¸½½ü½¹µã
+-- é‡æ–°æ‰«æé™„è¿‘ç„¦ç‚¹
 function D.RescanNearby()
 	D.ClearFocus()
 	D.ScanNearby()
@@ -566,7 +566,7 @@ function D.GetEligibleRules(tRules, dwMapID, dwType, dwID, dwTemplateID, szName,
 	return aRule
 end
 
--- ¶ÔÏó½øÈëÊÓÒ°
+-- å¯¹è±¡è¿›å…¥è§†é‡
 function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 	if nRetryCount and nRetryCount > 5 then
 		return
@@ -581,12 +581,12 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 	end
 
 	local szName = X.GetTargetName(dwType, dwID, { eShowID = 'never' })
-	-- ½â¾öÍæ¼Ò¸Õ½øÈëÊÓÒ°Ê±Ãû×ÖÎª¿ÕµÄÎÊÌâ
-	if (dwType == TARGET.PLAYER and not szName) or not me then -- ½â¾ö×ÔÉí¸Õ½øÈë³¡¾°µÄÊ±ºòµÄÎÊÌâ
+	-- è§£å†³ç©å®¶åˆšè¿›å…¥è§†é‡æ—¶åå­—ä¸ºç©ºçš„é—®é¢˜
+	if (dwType == TARGET.PLAYER and not szName) or not me then -- è§£å†³è‡ªèº«åˆšè¿›å…¥åœºæ™¯çš„æ—¶å€™çš„é—®é¢˜
 		X.DelayCall(300, function()
 			D.OnObjectEnterScene(dwType, dwID, (nRetryCount or 0) + 1)
 		end)
-	else-- if szName then -- ÅĞ¶ÏÊÇ·ñĞèÒª½¹µã
+	else-- if szName then -- åˆ¤æ–­æ˜¯å¦éœ€è¦ç„¦ç‚¹
 		if not szName then
 			szName = X.GetTargetName(dwType, dwID, { eShowID = 'auto' })
 		end
@@ -597,7 +597,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 		if dwType == TARGET.PLAYER then
 			if KObject.dwTongID ~= 0 then
 				szTong = X.GetTongName(KObject.dwTongID, 253)
-				if not szTong or szTong == '' then -- ½â¾öÄ¿±ê¸Õ½øÈë³¡¾°µÄÊ±ºò°ï»á»ñÈ¡²»µ½µÄÎÊÌâ
+				if not szTong or szTong == '' then -- è§£å†³ç›®æ ‡åˆšè¿›å…¥åœºæ™¯çš„æ—¶å€™å¸®ä¼šè·å–ä¸åˆ°çš„é—®é¢˜
 					X.DelayCall(300, function()
 						D.OnObjectEnterScene(dwType, dwID, (nRetryCount or 0) + 1)
 					end)
@@ -606,7 +606,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 		else
 			dwTemplateID = KObject.dwTemplateID
 		end
-		-- ÅĞ¶ÏÁÙÊ±½¹µã
+		-- åˆ¤æ–­ä¸´æ—¶ç„¦ç‚¹
 		if l_tTempFocusList[dwType][dwID] then
 			table.insert(aVia, {
 				bDeletable = true,
@@ -614,7 +614,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 			})
 			bFocus = true
 		end
-		-- ÅĞ¶ÏÓÀ¾Ã½¹µã
+		-- åˆ¤æ–­æ°¸ä¹…ç„¦ç‚¹
 		if not bFocus then
 			local dwTemplateID = dwType == TARGET.PLAYER and dwID or KObject.dwTemplateID
 			if O.tStaticFocus[dwType][dwTemplateID]
@@ -631,7 +631,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 				bFocus = true
 			end
 		end
-		-- ÅĞ¶ÏÄ¬ÈÏ½¹µã
+		-- åˆ¤æ–­é»˜è®¤ç„¦ç‚¹
 		if not bFocus and O.bAutoFocus then
 			local aRule = D.GetEligibleRules(O.aPatternFocus, dwMapID, dwType, dwID, dwTemplateID, szName, szTong)
 			for _, tRule in ipairs(aRule) do
@@ -643,7 +643,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 				bFocus = true
 			end
 		end
-		-- ÅĞ¶ÏÍÅ¶Ó¼à¿Ø½¹µã
+		-- åˆ¤æ–­å›¢é˜Ÿç›‘æ§ç„¦ç‚¹
 		if not bFocus and O.bTeamMonFocus then
 			local aRule = D.GetEligibleRules(TEAMMON_FOCUS, dwMapID, dwType, dwID, dwTemplateID, szName, szTong)
 			for _, tRule in ipairs(aRule) do
@@ -656,7 +656,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 			end
 		end
 
-		-- ÅĞ¶ÏÃû½£´ó»á
+		-- åˆ¤æ–­åå‰‘å¤§ä¼š
 		if not bFocus then
 			if X.IsInCompetitionMap() and not X.IsInBattlefieldMap() then
 				if dwType == TARGET.PLAYER then
@@ -697,7 +697,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 				end
 			else
 				if not O.bOnlyPublicMap or (not X.IsInCompetitionMap() and not X.IsInDungeonMap()) then
-					-- ÅĞ¶Ï½ÇÉ«±¸×¢
+					-- åˆ¤æ–­è§’è‰²å¤‡æ³¨
 					if dwType == TARGET.PLAYER
 					and O.bFocusPlayerRemark
 					and MY_PlayerRemark
@@ -713,7 +713,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 							bFocus = true
 						end
 					end
-					-- ÅĞ¶ÏºÃÓÑ
+					-- åˆ¤æ–­å¥½å‹
 					if dwType == TARGET.PLAYER
 					and O.bFocusFriend
 					and (
@@ -726,7 +726,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 						})
 						bFocus = true
 					end
-					-- ÅĞ¶ÏÍ¬°ï»á
+					-- åˆ¤æ–­åŒå¸®ä¼š
 					if dwType == TARGET.PLAYER
 					and O.bFocusTong
 					and dwID ~= X.GetClientPlayerInfo().dwID
@@ -738,7 +738,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 						bFocus = true
 					end
 				end
-				-- ÅĞ¶ÏµĞ¶ÔÍæ¼Ò
+				-- åˆ¤æ–­æ•Œå¯¹ç©å®¶
 				if dwType == TARGET.PLAYER
 				and O.bFocusEnemy
 				and IsEnemy(X.GetClientPlayerID(), dwID) then
@@ -751,7 +751,7 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 			end
 		end
 
-		-- ÅĞ¶ÏÖØÒªNPC
+		-- åˆ¤æ–­é‡è¦NPC
 		if not bFocus and O.bFocusINpc
 		and dwType == TARGET.NPC
 		and X.IsImportantNpc(dwMapID, KObject.dwTemplateID) then
@@ -762,19 +762,19 @@ function D.OnObjectEnterScene(dwType, dwID, nRetryCount)
 			bFocus = true
 		end
 
-		-- ÅĞ¶ÏÆÁ±ÎµÄNPC
+		-- åˆ¤æ–­å±è”½çš„NPC
 		if bFocus and dwType == TARGET.NPC and X.IsShieldedNpc(dwTemplateID, 'FOCUS') and X.IsRestricted('MY_Focus.SHILDED_NPC') then
 			bFocus = false
 		end
 
-		-- ¼ÓÈë½¹µã
+		-- åŠ å…¥ç„¦ç‚¹
 		if bFocus then
 			D.OnSetFocus(dwType, dwID, szName, aVia)
 		end
 	end
 end
 
--- ¶ÔÏóÀë¿ªÊÓÒ°
+-- å¯¹è±¡ç¦»å¼€è§†é‡
 function D.OnObjectLeaveScene(dwType, dwID)
 	local KObject = X.GetTargetHandle(dwType, dwID)
 	if KObject then
@@ -789,7 +789,7 @@ function D.OnObjectLeaveScene(dwType, dwID)
 	D.OnRemoveFocus(dwType, dwID)
 end
 
--- Ä¿±ê¼ÓÈë½¹µãÁĞ±í
+-- ç›®æ ‡åŠ å…¥ç„¦ç‚¹åˆ—è¡¨
 function D.OnSetFocus(dwType, dwID, szName, aVia)
 	local nIndex
 	for i, p in ipairs(FOCUS_LIST) do
@@ -810,9 +810,9 @@ function D.OnSetFocus(dwType, dwID, szName, aVia)
 	FireUIEvent('MY_FOCUS_UPDATE')
 end
 
--- Ä¿±êÒÆ³ı½¹µãÁĞ±í
+-- ç›®æ ‡ç§»é™¤ç„¦ç‚¹åˆ—è¡¨
 function D.OnRemoveFocus(dwType, dwID)
-	-- ´ÓÁĞ±íÊı¾İÖĞÉ¾³ı
+	-- ä»åˆ—è¡¨æ•°æ®ä¸­åˆ é™¤
 	for i = #FOCUS_LIST, 1, -1 do
 		local p = FOCUS_LIST[i]
 		if p.dwType == dwType and p.dwID == dwID then
@@ -823,7 +823,7 @@ function D.OnRemoveFocus(dwType, dwID)
 	FireUIEvent('MY_FOCUS_UPDATE')
 end
 
--- ÅÅĞò
+-- æ’åº
 function D.SortFocus(fn)
 	local p = X.GetClientPlayer()
 	fn = fn or function(p1, p2)
@@ -837,7 +837,7 @@ function D.SortFocus(fn)
 	table.sort(FOCUS_LIST, fn)
 end
 
--- »ñÈ¡½¹µãÁĞ±í
+-- è·å–ç„¦ç‚¹åˆ—è¡¨
 function D.GetFocusList()
 	local t = {}
 	for _, v in ipairs(FOCUS_LIST) do
@@ -846,7 +846,7 @@ function D.GetFocusList()
 	return t
 end
 
--- »ñÈ¡µ±Ç°ÏÔÊ¾µÄ½¹µãÁĞ±í
+-- è·å–å½“å‰æ˜¾ç¤ºçš„ç„¦ç‚¹åˆ—è¡¨
 function D.GetDisplayList()
 	local t = {}
 	local me = X.GetClientPlayer()
@@ -882,7 +882,8 @@ function D.GetDisplayList()
 							end
 						end
 						if bRuleFocus then
-							bFocus = true
+							--2025.8.16å¢åŠ éšè—ç„¦ç‚¹æ–¹æ³•ï¼Œä¸Šè¿°è§„åˆ™æ»¡è¶³åï¼Œåˆ¤æ–­æœ€å¤§è·ç¦»æ˜¯å¦ä¸º-1ï¼Œè‹¥ä¸º-1ä¸æ˜¾ç¤ºç„¦ç‚¹å¹¶è·³å‡ºè§„åˆ™éå†
+							if via.tRule.nMaxDistance == -1 then bFocus = false else bFocus = true end 
 							tRule = via.tRule
 							szVia = via.szVia
 							bDeletable = via.bDeletable
@@ -980,7 +981,7 @@ function D.OpenRuleEditor(tData, onChangeNotify, bHideBase)
 	local dY = 27
 	if not bHideBase then
 		W = 450
-		-- Æ¥Åä·½Ê½
+		-- åŒ¹é…æ–¹å¼
 		ui:Append('Text', { x = nX, y = nY, color = {255, 255, 0}, text = _L['Judge method'] }):AutoWidth()
 		nX, nY = nPaddingX + 10, nY + dY
 		for i, eType in ipairs({ 'NAME', 'NAME_PATT', 'ID', 'TEMPLATE_ID', 'TONG_NAME', 'TONG_NAME_PATT' }) do
@@ -999,7 +1000,7 @@ function D.OpenRuleEditor(tData, onChangeNotify, bHideBase)
 			}):AutoWidth():Pos('BOTTOMRIGHT') + 5
 		end
 		nX, nY = nPaddingX, nY + dY
-		-- Ä¿±êÀàĞÍ
+		-- ç›®æ ‡ç±»å‹
 		ui:Append('Text', { x = nX, y = nY, color = {255, 255, 0}, text = _L['Target type'] }):AutoWidth()
 		nX, nY = nPaddingX + 10, nY + dY
 		nX = ui:Append('WndCheckBox', {
@@ -1025,7 +1026,7 @@ function D.OpenRuleEditor(tData, onChangeNotify, bHideBase)
 		end
 		nX, nY = nPaddingX, nY + dY
 	end
-	-- Ä¿±ê¹ØÏµ
+	-- ç›®æ ‡å…³ç³»
 	ui:Append('Text', { x = nX, y = nY, color = {255, 255, 0}, text = _L['Target relation'] }):AutoWidth()
 	nX, nY = nPaddingX + 10, nY + dY
 	nX = ui:Append('WndCheckBox', {
@@ -1050,7 +1051,7 @@ function D.OpenRuleEditor(tData, onChangeNotify, bHideBase)
 		}):AutoWidth():Pos('BOTTOMRIGHT') + 5
 	end
 	nX, nY = nPaddingX, nY + dY
-	-- Ä¿±êÑªÁ¿°Ù·Ö±È
+	-- ç›®æ ‡è¡€é‡ç™¾åˆ†æ¯”
 	ui:Append('Text', { x = nX, y = nY, color = {255, 255, 0}, text = _L['Target life percentage'] }):AutoWidth()
 	nX, nY = nPaddingX + 10, nY + dY
 	nX = ui:Append('WndCheckBox', {
@@ -1091,7 +1092,7 @@ function D.OpenRuleEditor(tData, onChangeNotify, bHideBase)
 		autoEnable = function() return tData.tLife.bEnable end,
 	}):AutoWidth():Pos('BOTTOMRIGHT') + 5
 	nX, nY = nPaddingX, nY + dY
-	-- ×îÔ¶¾àÀë
+	-- æœ€è¿œè·ç¦»
 	ui:Append('Text', { x = nX, y = nY, color = {255, 255, 0}, text = _L['Max distance'] }):AutoWidth()
 	nX, nY = nPaddingX + 10, nY + dY
 	nX = ui:Append('WndEditBox', {
@@ -1104,7 +1105,7 @@ function D.OpenRuleEditor(tData, onChangeNotify, bHideBase)
 		end,
 	}):AutoWidth():Pos('BOTTOMRIGHT') + 5
 	nX, nY = nPaddingX, nY + dY
-	-- Ãû³ÆÏÔÊ¾
+	-- åç§°æ˜¾ç¤º
 	ui:Append('Text', { x = nX, y = nY, color = {255, 255, 0}, text = _L['Name display'] }):AutoWidth()
 	nX, nY = nPaddingX + 10, nY + dY
 	nX = ui:Append('WndEditBox', {
@@ -1224,7 +1225,7 @@ X.RegisterTutorial({
 })
 
 --------------------------------------------------------------------------------
--- È«¾Öµ¼³ö
+-- å…¨å±€å¯¼å‡º
 --------------------------------------------------------------------------------
 do
 local settings = {
@@ -1345,10 +1346,10 @@ MY_Focus = X.CreateModule(settings)
 end
 
 --------------------------------------------------------------------------------
--- ÊÂ¼ş×¢²á
+-- äº‹ä»¶æ³¨å†Œ
 --------------------------------------------------------------------------------
 
--- ³õÊ¼»¯ĞèÒªµÈ´ı MY_FocusUI ¼ÓÔØÍê³É
+-- åˆå§‹åŒ–éœ€è¦ç­‰å¾… MY_FocusUI åŠ è½½å®Œæˆ
 X.RegisterUserSettingsInit('MY_Focus', function()
 	D.bReady = true
 	D.LoadConfig()
