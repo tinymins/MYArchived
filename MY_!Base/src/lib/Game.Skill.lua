@@ -445,7 +445,8 @@ function X.GetSkillCDProgress(KObject, dwID, nLevel, bIgnorePublic)
 	else -- 普通技能CD刷新
 		szType = 'NORMAL'
 		if bIgnorePublic then
-			nLeft, nTotal, nCount, bPublic = select(2, GetSkillCDProgress(dwID, nLevel, dwCDID, KObject))
+			local dwGCDID = KSkill.GetPublicCoolDown()
+			nLeft, nTotal, nCount, bPublic = select(2, GetSkillCDProgress(dwID, nLevel, dwGCDID, KObject))
 		else
 			nLeft, nTotal, nCount, bPublic = select(2, GetSkillCDProgress(dwID, nLevel, nil, KObject))
 		end
