@@ -1,0 +1,60 @@
+name: Auto Request Reviewers
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+jobs:
+  add-reviews:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Request review from GitHub Copilot
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              // Request GitHub Copilot as reviewer
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                reviewers: ['github-copilot[bot]']
+              });
+
+              console.log('Successfully requested GitHub Copilot review');
+            } catch (error) {
+              console.log('Error requesting Copilot review:', error.message);
+
+              // Alternative approach: Request review from copilot app
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.issue.number,
+                  team_reviewers: [],
+                  reviewers: ['copilot']
+                });
+                console.log('Requested review from copilot user');
+              } catch (altError) {
+                console.log('Alternative approach failed:', altError.message);
+
+                // Final fallback: Add comment to trigger manual copilot review
+                try {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    body: '? GitHub Copilot, please review this PR when ready.'
+                  });
+                  console.log('Added comment to request manual Copilot review');
+                } catch (commentError) {
+                  console.log('Error adding comment:', commentError.message);
+                }
+              }
+            }
