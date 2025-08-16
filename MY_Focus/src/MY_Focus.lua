@@ -883,7 +883,7 @@ function D.GetDisplayList()
 						end
 						if bRuleFocus then
 							--2025.8.16增加隐藏焦点方法，上述规则满足后，判断最大距离是否为-1，若为-1不显示焦点并跳出规则遍历
-							if via.tRule.nMaxDistance == -1 then bFocus = false else bFocus = true end
+							bFocus = via.tRule.nMaxDistance ~= -1
 							tRule = via.tRule
 							szVia = via.szVia
 							bDeletable = via.bDeletable
