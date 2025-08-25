@@ -18,7 +18,7 @@ if not X.AssertVersion(MODULE_NAME, _L[MODULE_NAME], '^27.0.0') then
 	return
 end
 --[[#DEBUG BEGIN]]X.ReportModuleLoading(MODULE_PATH, 'START')--[[#DEBUG END]]
-X.RegisterRestriction('MY_BagEx_Bag', { remake = true })
+X.RegisterRestriction('MY_BagEx_Bag', { remake = false })
 --------------------------------------------------------------------------------
 
 local O = X.CreateUserSettingsModule(MODULE_NAME, _L['General'], {
