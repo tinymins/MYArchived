@@ -108,6 +108,12 @@ local function UpdateTeamMonData()
 							v.nLevel = data.nLevel
 						end
 						v.nIcon = data.nIcon
+						--2025.08.25加载团队数据时缓存气劲名称，避免后续反复调用GetBuffName
+						if data.szName then
+							v.szName = X.RenderTemplateString(data.szName, { sender = '', receiver = '' }, -1, true, false)
+						else
+							v.szName = X.GetBuffName(data.dwID, data.nLevel)
+						end
 						table.insert(aBuff, v)
 					end
 				end
