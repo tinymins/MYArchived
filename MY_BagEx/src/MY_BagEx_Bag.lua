@@ -18,6 +18,7 @@ if not X.AssertVersion(MODULE_NAME, _L[MODULE_NAME], '^27.0.0') then
 	return
 end
 --[[#DEBUG BEGIN]]X.ReportModuleLoading(MODULE_PATH, 'START')--[[#DEBUG END]]
+X.RegisterRestriction('MY_BagEx_Bag', { remake = true })
 --------------------------------------------------------------------------------
 
 local O = X.CreateUserSettingsModule(MODULE_NAME, _L['General'], {
@@ -30,6 +31,7 @@ local O = X.CreateUserSettingsModule(MODULE_NAME, _L['General'], {
 		}),
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
+		szRestriction = 'MY_BagEx_Bag',
 	},
 	bConfirm = {
 		ePathType = X.PATH_TYPE.ROLE,
@@ -40,6 +42,7 @@ local O = X.CreateUserSettingsModule(MODULE_NAME, _L['General'], {
 		}),
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
+		szRestriction = 'MY_BagEx_Bag',
 	},
 	tLock = {
 		ePathType = X.PATH_TYPE.ROLE,
@@ -51,12 +54,13 @@ local O = X.CreateUserSettingsModule(MODULE_NAME, _L['General'], {
 		}),
 		xSchema = X.Schema.Map(X.Schema.String, X.Schema.Boolean),
 		xDefaultValue = {},
+		szRestriction = 'MY_BagEx_Bag',
 	},
 })
 local D = {}
 
 function D.IsEnabled()
-	return O.bEnable and not X.IsInInventoryPackageLimitedMap()
+	return O.bEnable and not X.IsInInventoryPackageLimitedMap() and not X.IsRestricted('MY_BagEx_Bag')
 end
 
 function D.ShowItemShadow(frame, dwBox, dwX, bEditLock)
@@ -218,24 +222,28 @@ function D.OnEnableChange()
 end
 
 function D.OnPanelActivePartial(ui, nPaddingX, nPaddingY, nW, nH, nX, nY, nLH)
-	nX = nX + ui:Append('WndCheckBox', {
-		x = nX, y = nY, w = 200,
-		text = _L['Bag package sort and stack'],
-		checked = O.bEnable,
-		onCheck = function(bChecked)
-			O.bEnable = bChecked
-			D.OnEnableChange()
-		end,
-	}):AutoWidth():Width() + 5
-	nX = nX + ui:Append('WndCheckBox', {
-		x = nX, y = nY, w = 200,
-		text = _L['Need confirm'],
-		checked = O.bConfirm,
-		onCheck = function(bChecked)
-			O.bConfirm = bChecked
-		end,
-		autoEnable = function() return O.bEnable end,
-	}):AutoWidth():Width() + 5
+	if not X.IsRestricted('MY_BagEx_Bag') then
+		nX = nX + ui:Append('WndCheckBox', {
+			x = nX, y = nY, w = 200,
+			text = _L['Bag package sort and stack'],
+			checked = O.bEnable,
+			onCheck = function(bChecked)
+				O.bEnable = bChecked
+				D.OnEnableChange()
+			end,
+		}):AutoWidth():Width() + 5
+		nX = nX + ui:Append('WndCheckBox', {
+			x = nX, y = nY, w = 200,
+			text = _L['Need confirm'],
+			checked = O.bConfirm,
+			onCheck = function(bChecked)
+				O.bConfirm = bChecked
+			end,
+			autoEnable = function() return O.bEnable end,
+		}):AutoWidth():Width() + 5
+		nX = nPaddingX
+		nY = nY + nLH
+	end
 	return nX, nY
 end
 

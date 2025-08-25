@@ -4,19 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Ҫ�����İ汾��'
+        description: '要发布的版本号'
         required: true
         default: |
           0.0.0
         type: string
       changelog:
-        description: '������־���Ӳ��Ҽ����������|�Ӳ�������������ݣ�'
+        description: '更新日志（子插件壹：更新内容|子插件贰：更新内容）'
         required: true
         type: string
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    name: 🚀 自动化构建
     environment:
       name: Publish
       url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.event.inputs.version }}
@@ -75,18 +76,67 @@ jobs:
           sed -i "s/\(local _VERSION_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${VERSION}'/" MY_!Base/src/lib/Base.lua
 
       - name: Update CHANGELOG.md
+        id: update_changelog
         run: |
           VERSION="${{ github.event.inputs.version }}"
           CHANGELOG="${{ github.event.inputs.changelog }}"
           TMPFILE=$(mktemp)
-          echo "# ������־" > $TMPFILE
+          echo "# 更新日志" > $TMPFILE
           echo "" >> $TMPFILE
-          echo "## ��������� v${VERSION}" >> $TMPFILE
-          echo "" >> $TMPFILE
-          echo "$CHANGELOG" | tr '|' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/^["""]//g' | sed 's/["""]$//g' | sed 's/[��:]/] /g' | sed 's/^/* [/g' >> $TMPFILE
+
+          # 智能处理更新日志内容
+          process_changelog() {
+            local input="$1"
+
+            # 首先处理原始格式 * [插件] 内容，在 * 前面添加分隔符
+            input=$(echo "$input" | sed 's/\([^|]\)\(\*[[:space:]]*\[\)/\1|\2/g')
+
+            # 按 | 分割每一行
+            echo "$input" | tr '|' '\n' | while IFS= read -r line; do
+              # 去掉首尾空格
+              line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+              # 去掉首尾引号
+              line=$(echo "$line" | sed 's/^["""]//;s/["""]$//')
+
+              # 跳过空行
+              [ -z "$line" ] && continue
+
+              # 检查是否已经是 * [插件] 格式
+              if echo "$line" | grep -q '^\*[[:space:]]*\['; then
+                # 已经是正确格式，只需要格式化空格
+                plugin=$(echo "$line" | sed 's/^\*[[:space:]]*\[\([^]]*\)\].*/\1/' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                content=$(echo "$line" | sed 's/^\*[[:space:]]*\[[^]]*\][[:space:]]*//')
+                echo "* [$plugin] $content"
+              else
+                # 转换 插件:内容 格式为 * [插件] 内容
+                if echo "$line" | grep -q '[：:]'; then
+                  plugin=$(echo "$line" | sed 's/\([^：:]*\)[：:].*/\1/' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/^["""]//;s/["""]$//')
+                  content=$(echo "$line" | sed 's/[^：:]*[：:][[:space:]]*//' | sed 's/^["""]//;s/["""]$//')
+                  echo "* [$plugin] $content"
+                else
+                  # 如果没有冒号，假设整行都是内容
+                  echo "* $line"
+                fi
+              fi
+            done
+          }
+
+          # 处理更新日志并保存到临时变量
+          PROCESSED_CHANGELOG="## 茗伊插件集 v${VERSION}"$'\n\n'"$(process_changelog "$CHANGELOG")"
+
+          # 输出到 TMPFILE
+          echo "$PROCESSED_CHANGELOG" >> $TMPFILE
           echo "" >> $TMPFILE
           tail -n +3 CHANGELOG.md >> $TMPFILE
           mv $TMPFILE CHANGELOG.md
+
+          # 设置步骤输出（用于后续步骤）
+          {
+            echo "changelog<<EOF"
+            echo "$PROCESSED_CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Write secret to file
         run: |
@@ -104,26 +154,60 @@ jobs:
         run: |
           python3 \!src-dist/ci.py
 
-      - name: Push commits
-        run: |
-          git push -f origin master:stable
-
-      - name: Create release branch and PR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release Branch
         run: |
           VERSION="${{ github.event.inputs.version }}"
           BRANCH="release/v${VERSION}"
-          git checkout -b $BRANCH
-          git push -u origin $BRANCH -f
-          gh pr create \
-            --title "release: v${VERSION}" \
-            --body "Automated release PR for version ${VERSION}" \
-            --base master \
-            --head $BRANCH || echo "PR already exists or failed to create, continuing..."
+          git push -f origin master:stable
+          git push -f origin master:$BRANCH
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          title: "release: v${{ github.event.inputs.version }}"
+          body: "Automated release PR for version ${{ github.event.inputs.version }}"
+          base: master
+          branch: "release/v${{ github.event.inputs.version }}"
 
       - name: Upload Artifacts
+        id: upload_artifacts
         uses: actions/upload-artifact@v4
         with:
           name: dist-archives-${{ github.run_number }}-${{ github.sha }}
           path: '\!src-dist/dist/*.7z'
+
+      - name: Output Summary
+        if: steps.create_pr.outputs.pull-request-url
+        run: |
+          echo "# 🎉 构建成功!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # 输出更新日志内容
+          echo "## 📝 更新日志内容" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.update_changelog.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # 输出 Pull Request 信息
+          echo "## 🔗 Pull Request 信息" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📝 **Pull Request 已创建**: ${{ steps.create_pr.outputs.pull-request-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **版本**: v${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # 输出 Artifacts 信息
+          echo "## 📦 构建产物" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📁 **Artifacts 名称**: \`dist-archives-${{ github.run_number }}-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **下载链接**: [${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 点击上面的链接可以在 Actions 页面中找到并下载构建产物" >> $GITHUB_STEP_SUMMARY
+
+          # 同时输出 notice
+          echo "::notice title=📝 Pull Request 已生成::Pull Request created: ${{ steps.create_pr.outputs.pull-request-url }}"

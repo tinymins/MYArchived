@@ -18,6 +18,7 @@ if not X.AssertVersion(MODULE_NAME, _L[MODULE_NAME], '^27.0.0') then
 	return
 end
 --[[#DEBUG BEGIN]]X.ReportModuleLoading(MODULE_PATH, 'START')--[[#DEBUG END]]
+X.RegisterRestriction('MY_BagEx_GenericFilters', { remake = true })
 --------------------------------------------------------------------------------
 
 local O = X.CreateUserSettingsModule(MODULE_NAME, _L['General'], {
@@ -29,6 +30,7 @@ local O = X.CreateUserSettingsModule(MODULE_NAME, _L['General'], {
 		}),
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = true,
+		szRestriction = 'MY_BagEx_GenericFilters',
 	},
 })
 local D = {}
@@ -415,7 +417,7 @@ local function Unhook()
 end
 
 local function Apply(bEnable)
-	if bEnable then
+	if bEnable and not X.IsRestricted('MY_BagEx_GenericFilters') then
 		Hook()
 		X.RegisterFrameCreate('BigBagPanel', 'MY_BAGEX', Hook)
 		X.RegisterFrameCreate('BigBankPanel', 'MY_BAGEX', Hook)
@@ -454,15 +456,18 @@ end)
 end
 
 function D.OnPanelActivePartial(ui, nPaddingX, nPaddingY, nW, nH, nX, nY, nLH)
-	nX = nX + ui:Append('WndCheckBox', {
-		x = nX, y = nY, w = 200,
-		text = _L['Generic package searcher and filters'],
-		checked = O.bEnable,
-		onCheck = function(bChecked)
-			D.Enable(bChecked)
-		end,
-	}):AutoWidth():Width() + 5
-	-- y = y + 25
+	if not X.IsRestricted('MY_BagEx_GenericFilters') then
+		nX = nX + ui:Append('WndCheckBox', {
+			x = nX, y = nY, w = 200,
+			text = _L['Generic package searcher and filters'],
+			checked = O.bEnable,
+			onCheck = function(bChecked)
+				D.Enable(bChecked)
+			end,
+		}):AutoWidth():Width() + 5
+		nX = nPaddingX
+		nY = nY + nLH
+	end
 	return nX, nY
 end
 

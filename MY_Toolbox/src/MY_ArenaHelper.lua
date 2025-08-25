@@ -18,6 +18,7 @@ if not X.AssertVersion(MODULE_NAME, _L[MODULE_NAME], '^27.0.0') then
 	return
 end
 --[[#DEBUG BEGIN]]X.ReportModuleLoading(MODULE_PATH, 'START')--[[#DEBUG END]]
+X.RegisterRestriction('MY_ArenaHelper.bAutoShowModel', { remake = true })
 --------------------------------------------------------------------------
 
 local O = X.CreateUserSettingsModule('MY_ArenaHelper', _L['General'], {
@@ -40,6 +41,7 @@ local O = X.CreateUserSettingsModule('MY_ArenaHelper', _L['General'], {
 		}),
 		xSchema = X.Schema.Boolean,
 		xDefaultValue = false,
+		szRestriction = 'MY_ArenaHelper.bAutoShowModel',
 	},
 	bAutoShowModelBattlefield = {
 		ePathType = X.PATH_TYPE.ROLE,
@@ -99,7 +101,7 @@ X.RegisterEvent('LOADING_END', 'MY_ArenaHelper_ShowTargetModel', function()
 		return
 	end
 	local bHasValue = X.IsBoolean(l_bShowNpc) and X.IsBoolean(l_bShowPlayer) and X.IsBoolean(l_bShowPartyOverride)
-	if (X.IsInArenaMap() and O.bAutoShowModel)
+	if (X.IsInArenaMap() and O.bAutoShowModel and not X.IsRestricted('MY_ArenaHelper.bAutoShowModel'))
 	or (X.IsInBattlefieldMap() and O.bAutoShowModelBattlefield)
 	or (X.IsInPubgMap() and O.bAutoShowModelPubg) then
 		if not bHasValue then
@@ -136,14 +138,16 @@ function D.OnPanelActivePartial(ui, nPaddingX, nPaddingY, nW, nH, nX, nY, nLH)
 	}):Width() + 5
 
 	-- 名剑大会自动取消屏蔽
-	nX = nX + ui:Append('WndCheckBox', {
-		x = nX, y = nY, w = 'auto',
-		text = _L['Auto cancel hide player in arena'],
-		checked = MY_ArenaHelper.bAutoShowModel,
-		onCheck = function(bChecked)
-			MY_ArenaHelper.bAutoShowModel = bChecked
-		end,
-	}):Width() + 5
+	if not X.IsRestricted('MY_ArenaHelper.bAutoShowModel') then
+		nX = nX + ui:Append('WndCheckBox', {
+			x = nX, y = nY, w = 'auto',
+			text = _L['Auto cancel hide player in arena'],
+			checked = MY_ArenaHelper.bAutoShowModel,
+			onCheck = function(bChecked)
+				MY_ArenaHelper.bAutoShowModel = bChecked
+			end,
+		}):Width() + 5
+	end
 
 	nY = nY + nLH
 	nX = nPaddingX

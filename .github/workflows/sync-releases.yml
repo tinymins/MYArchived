@@ -1,0 +1,132 @@
+name: Sync Releases
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-releases:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整的git历史，包括所有tags
+
+      - name: Set up Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get all tags and check for missing releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 获取所有现有的releases（支持分页）
+          echo "Fetching existing releases..."
+          page=1
+          all_releases="[]"
+
+          while true; do
+            echo "Fetching page $page..."
+            releases_page=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/releases?page=$page&per_page=100")
+
+            # 检查是否返回了空数组（没有更多数据）
+            if [ "$(echo "$releases_page" | jq '. | length')" = "0" ]; then
+              break
+            fi
+
+            # 合并到总的releases数组中
+            all_releases=$(echo "$all_releases $releases_page" | jq -s 'add')
+            page=$((page + 1))
+          done
+
+          echo "$all_releases" > existing_releases.json
+          echo "Total releases found: $(echo "$all_releases" | jq '. | length')"
+
+          # 提取现有release的tag名称
+          existing_tags=$(jq -r '.[].tag_name' existing_releases.json | sort)
+          echo "Existing release tags:"
+          echo "$existing_tags"
+          echo ""
+
+          # 获取所有git tags，按版本排序
+          echo "Fetching all git tags..."
+          all_tags=$(git tag -l | grep -E '^[vV][0-9]+(\.[0-9]+)*$' | sort -V)
+          echo "All git tags:"
+          echo "$all_tags"
+          echo ""
+
+          # 检查缺失的releases
+          missing_tags=""
+          for tag in $all_tags; do
+            if ! echo "$existing_tags" | grep -q "^$tag$"; then
+              echo "Missing release for tag: $tag"
+              missing_tags="$missing_tags $tag"
+            fi
+          done
+
+          if [ -z "$missing_tags" ]; then
+            echo "All tags have corresponding releases. Nothing to do."
+            exit 0
+          fi
+
+          echo "Tags missing releases: $missing_tags"
+          echo ""
+
+          # 为每个缺失的tag创建release
+          for tag in $missing_tags; do
+            echo "Creating release for tag: $tag"
+
+            # 获取tag的完整注释信息
+            tag_message=$(git tag -l --format='%(contents)' "$tag")
+
+            if [ -z "$tag_message" ]; then
+              echo "Warning: No tag message found for $tag, using default message"
+              release_notes="Release $tag"
+            else
+              echo "Found tag message for $tag"
+              # 提取从 "Release vX.X.X" 开始的所有内容作为release notes
+              release_notes=$(echo "$tag_message" | sed -n '/^Release v/,$p')
+
+              if [ -z "$release_notes" ]; then
+                # 如果没有找到 "Release v" 开头的内容，使用整个tag消息
+                release_notes="$tag_message"
+              fi
+            fi
+
+            # 创建release的JSON payload
+            release_data=$(jq -n \
+              --arg tag "$tag" \
+              --arg name "Release $tag" \
+              --arg body "$release_notes" \
+              '{
+                tag_name: $tag,
+                name: $name,
+                body: $body,
+                draft: false,
+                prerelease: false
+              }')
+
+            echo "Creating release for $tag..."
+            response=$(curl -s -w "%{http_code}" -o response.json \
+              -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/releases" \
+              -d "$release_data")
+
+            http_code=$(echo "$response" | tail -c 4)
+
+            if [ "$http_code" = "201" ]; then
+              echo "? Successfully created release for $tag"
+              release_url=$(jq -r '.html_url' response.json)
+              echo "Release URL: $release_url"
+            else
+              echo "? Failed to create release for $tag (HTTP $http_code)"
+              echo "Response:"
+              cat response.json
+            fi
+            echo ""
+          done

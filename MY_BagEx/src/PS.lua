@@ -29,11 +29,7 @@ function PS.OnPanelActive(wnd)
 	local nLH = 28
 
 	nX, nY = MY_BagEx_GenericFilters.OnPanelActivePartial(ui, nPaddingX, nPaddingY, nW, nH, nX, nY, nLH)
-	nX = nPaddingX
-	nY = nY + nLH
 	nX, nY = MY_BagEx_Bag.OnPanelActivePartial(ui, nPaddingX, nPaddingY, nW, nH, nX, nY, nLH)
-	nX = nPaddingX
-	nY = nY + nLH
 	nX, nY = MY_BagEx_Bank.OnPanelActivePartial(ui, nPaddingX, nPaddingY, nW, nH, nX, nY, nLH)
 	nX = nPaddingX
 	nY = nY + nLH
