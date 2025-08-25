@@ -1021,14 +1021,15 @@ function D.CountdownEvent(data, nClass, szSender, szReceiver, aBackreferences)
 			if nClass == v.nClass then
 				local nType, szKey = D.GetCountdownTypeKey(data, i, szSender, szReceiver, aBackreferences)
 				-- 2025.08.26解决正则表达式喊话事件的多段倒计时nTime字段未替换{$1}模板字符
-				if X.IsString(v.nTime) then
-					v.nTime = FilterCustomText(v.nTime, szSender, szReceiver, aBackreferences)
+				local nTime = v.nTime
+				if X.IsTable(aBackreferences) and X.IsString(v.nTime) then
+					nTime = FilterCustomText(nTime, szSender, szReceiver, aBackreferences)
 				end
 				local tParam = {
 					nIcon     = v.nIcon or data.nIcon or 340,
 					nFrame    = v.nFrame,
 					szContent = FilterCustomText(v.szName or data.szName, szSender, szReceiver, aBackreferences),
-					nTime     = v.nTime,
+					nTime     = nTime,
 					nRefresh  = v.nRefresh,
 					bTalk     = v.bTeamChannel,
 					bHold     = v.bHold,
