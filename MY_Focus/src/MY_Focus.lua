@@ -883,15 +883,7 @@ function D.GetDisplayList()
 						end
 						if bRuleFocus then
 							--2025.8.16Ôö¼ÓÒş²Ø½¹µã·½·¨£¬ÉÏÊö¹æÔòÂú×ãºó£¬ÅĞ¶Ï×î´ó¾àÀëÊÇ·ñÎª-1£¬ÈôÎª-1²»ÏÔÊ¾½¹µã²¢Ìø³ö¹æÔò±éÀú
-<<<<<<< HEAD
-<<<<<<< HEAD
 							bFocus = via.tRule.nMaxDistance ~= -1
-=======
-							if via.tRule.nMaxDistance == -1 then bFocus = false else bFocus = true end
->>>>>>> 4a64400cb (fix: ç„¦ç‚¹åˆ—è¡¨å¢åŠ éšè—ç„¦ç‚¹æ–¹æ³•ï¼Œå½“æ»¡è¶³è§„åˆ™ï¼ˆè¡€é‡ç™¾åˆ†æ¯”ã€ç›®æ ‡å…³ç³»ï¼‰æ—¶ï¼Œåˆ¤æ–­æœ€å¤§è·ç¦»ï¼ˆnMaxDistanceï¼‰æ˜¯å¦ä¸º-1ï¼Œè‹¥ä¸º-1åˆ™ä¸æ˜¾ç¤ºç„¦ç‚¹å¹¶è·³å‡ºåç»­è§„åˆ™éå†ã€‚)
-=======
-							bFocus = via.tRule.nMaxDistance ~= -1
->>>>>>> f9d8fff9a (fix: æŒ‰æç¤ºä¼˜åŒ–ä»£ç )
 							tRule = via.tRule
 							szVia = via.szVia
 							bDeletable = via.bDeletable
