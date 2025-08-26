@@ -146,8 +146,10 @@ local function CreateCountdown(nType, szKey, tParam, szSender, szReceiver)
 		if ui and ui:IsValid() then
 			ui.obj:RemoveItem()
 		end
-		-- 2025.08.25增加倒计时条强制设置nRefresh，nTime为-1，-2强制更改nRefresh
-		ST_TIME_EXPIRE[nType][szKey] = nTime + (tParam.nRefresh or 0) * 1000 - 3
+		-- 2025.08.25增加倒计时条强制设置nRefresh，nTime为-1，-2强制更改nRefresh，为兼容旧数据，先判断有nRefresh字段再修改
+		if tParam.nRefresh then
+			ST_TIME_EXPIRE[nType][szKey] = nTime + tParam.nRefresh * 1000 - 3
+		end
 	elseif tTime.nTime == -2 then
 		ST_TIME_EXPIRE[nType][szKey] = nTime + (tParam.nRefresh or 0) * 1000 - 3
 	else
