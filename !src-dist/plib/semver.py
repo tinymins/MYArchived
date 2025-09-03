@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 semver for Python
-Based on the Lua version from Boilerplate_!Base/src/lib/Semver.lua
+Based on the Lua version from MY_!Base/src/lib/Semver.lua
 Supports npm-style version constraints like ^, ~, *, etc.
 """
 

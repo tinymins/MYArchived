@@ -60,7 +60,7 @@ jobs:
         id: calculate_version
         run: |
           VERSION_TYPE="${{ github.event.inputs.version_type }}"
-          CURRENT_VERSION=$(grep "_VERSION_.*'.*'" Boilerplate_!Base/src/lib/Base.lua | sed -E "s/.*'(.*)'.*/\1/")
+          CURRENT_VERSION=$(grep "_VERSION_.*'.*'" MY_!Base/src/lib/Base.lua | sed -E "s/.*'(.*)'.*/\1/")
 
           # 验证当前版本格式
           if ! echo "$CURRENT_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
@@ -103,8 +103,8 @@ jobs:
         run: |
           DATE=$(date +%Y%m%d)
           NEW_VERSION="${{ steps.calculate_version.outputs.new_version }}"
-          sed -i "s/\(local _BUILD_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${DATE}'/" Boilerplate_!Base/src/lib/Base.lua
-          sed -i "s/\(local _VERSION_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${NEW_VERSION}'/" Boilerplate_!Base/src/lib/Base.lua
+          sed -i "s/\(local _BUILD_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${DATE}'/" MY_!Base/src/lib/Base.lua
+          sed -i "s/\(local _VERSION_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${NEW_VERSION}'/" MY_!Base/src/lib/Base.lua
 
       - name: Update AssertVersion calls in Lua files
         run: |
@@ -168,7 +168,7 @@ jobs:
           }
 
           # 处理更新日志并保存到临时变量
-          PROCESSED_CHANGELOG="## Boilerplate插件集 v${NEW_VERSION}"$'\n\n'"$(process_changelog "$CHANGELOG")"
+          PROCESSED_CHANGELOG="## 茗伊插件集 v${NEW_VERSION}"$'\n\n'"$(process_changelog "$CHANGELOG")"
 
           # 输出到 TMPFILE
           echo "$PROCESSED_CHANGELOG" >> $TMPFILE
