@@ -3,12 +3,15 @@ name: Publish
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: '要发布的版本号'
+      version_type:
+        description: '版本发布类型'
         required: true
-        default: |
-          0.0.0
-        type: string
+        default: 'Patch'
+        type: choice
+        options:
+          - Patch
+          - Minor
+          - Major
       changelog:
         description: '更新日志（子插件壹：更新内容|子插件贰：更新内容）'
         required: true
@@ -20,7 +23,7 @@ jobs:
     name: 🚀 自动化构建
     environment:
       name: Publish
-      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ github.event.inputs.version }}
+      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ steps.calculate_version.outputs.new_version }}
 
     steps:
       - name: Checkout full repo
@@ -53,32 +56,74 @@ jobs:
           git checkout master
           git reset --hard origin/master
 
-      - name: Check version
+      - name: Calculate new version
+        id: calculate_version
         run: |
-          VERSION="${{ github.event.inputs.version }}"
-          CURRENT_VERSION=$(grep "_VERSION_.*'.*'" MY_!Base/src/lib/Base.lua | sed -E "s/.*'(.*)'.*/\1/")
-          python3 -c "
+          VERSION_TYPE="${{ github.event.inputs.version_type }}"
+          CURRENT_VERSION=$(grep "_VERSION_.*'.*'" Boilerplate_!Base/src/lib/Base.lua | sed -E "s/.*'(.*)'.*/\1/")
+
+          # 验证当前版本格式
+          if ! echo "$CURRENT_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Current version format is invalid: $CURRENT_VERSION. Expected format: X.Y.Z"
+            exit 1
+          fi
+
+          # 使用Python计算新版本号
+          NEW_VERSION=$(python3 -c "
           import semver
+
+          current = '$CURRENT_VERSION'
+          version_type = '$VERSION_TYPE'.lower()  # 转换为小写
+
           try:
-            if not semver.compare('$VERSION', '$CURRENT_VERSION') > 0:
-              print('::error::New version $VERSION must be greater than current version $CURRENT_VERSION')
-              exit(1)
-          except ValueError as e:
-            print('::error::Invalid version format. Both versions must be in format X.Y.Z')
+            if version_type == 'patch':
+              new_version = semver.bump_patch(current)
+            elif version_type == 'minor':
+              new_version = semver.bump_minor(current)
+            elif version_type == 'major':
+              new_version = semver.bump_major(current)
+            else:
+              raise ValueError(f'Invalid version type: {version_type}')
+
+            print(new_version)
+          except Exception as e:
+            print(f'Error calculating new version: {e}', file=sys.stderr)
             exit(1)
-          "
+          ")
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "Version type: $VERSION_TYPE"
+          echo "New version: $NEW_VERSION"
+
+          # 设置输出变量
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Update Base.lua version and build
         run: |
           DATE=$(date +%Y%m%d)
-          VERSION="${{ github.event.inputs.version }}"
-          sed -i "s/\(local _BUILD_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${DATE}'/" MY_!Base/src/lib/Base.lua
-          sed -i "s/\(local _VERSION_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${VERSION}'/" MY_!Base/src/lib/Base.lua
+          NEW_VERSION="${{ steps.calculate_version.outputs.new_version }}"
+          sed -i "s/\(local _BUILD_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${DATE}'/" Boilerplate_!Base/src/lib/Base.lua
+          sed -i "s/\(local _VERSION_\)\( *\)\(=\) *'[^']*'/\1\2\3 '${NEW_VERSION}'/" Boilerplate_!Base/src/lib/Base.lua
+
+      - name: Update AssertVersion calls in Lua files
+        run: |
+          NEW_VERSION="${{ steps.calculate_version.outputs.new_version }}"
+          echo "🔍 Updating AssertVersion calls to version: $NEW_VERSION"
+          python3 \!src-dist/update_assert_version.py "$NEW_VERSION" --force-changed
+
+          # 检查是否有文件被修改
+          if git diff --quiet; then
+            echo "✅ No AssertVersion calls needed to be updated"
+          else
+            echo "📝 Some AssertVersion calls have been updated:"
+            git diff --name-only
+          fi
 
       - name: Update CHANGELOG.md
         id: update_changelog
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          NEW_VERSION="${{ steps.calculate_version.outputs.new_version }}"
           CHANGELOG="${{ github.event.inputs.changelog }}"
           TMPFILE=$(mktemp)
           echo "# 更新日志" > $TMPFILE
@@ -123,7 +168,7 @@ jobs:
           }
 
           # 处理更新日志并保存到临时变量
-          PROCESSED_CHANGELOG="## 茗伊插件集 v${VERSION}"$'\n\n'"$(process_changelog "$CHANGELOG")"
+          PROCESSED_CHANGELOG="## Boilerplate插件集 v${NEW_VERSION}"$'\n\n'"$(process_changelog "$CHANGELOG")"
 
           # 输出到 TMPFILE
           echo "$PROCESSED_CHANGELOG" >> $TMPFILE
@@ -146,9 +191,9 @@ jobs:
 
       - name: Commit release changes
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          NEW_VERSION="${{ steps.calculate_version.outputs.new_version }}"
           git add -A
-          git commit -m "release: ${VERSION}" || echo "No changes to commit"
+          git commit -m "release: ${NEW_VERSION}" || echo "No changes to commit"
 
       - name: Run Build Command
         run: |
@@ -156,8 +201,8 @@ jobs:
 
       - name: Create Release Branch
         run: |
-          VERSION="${{ github.event.inputs.version }}"
-          BRANCH="release/v${VERSION}"
+          NEW_VERSION="${{ steps.calculate_version.outputs.new_version }}"
+          BRANCH="release/v${NEW_VERSION}"
           git push -f origin master:stable
           git push -f origin master:$BRANCH
 
@@ -166,10 +211,10 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
-          title: "release: v${{ github.event.inputs.version }}"
-          body: "Automated release PR for version ${{ github.event.inputs.version }}"
+          title: "release: v${{ steps.calculate_version.outputs.new_version }}"
+          body: "Automated release PR for version ${{ steps.calculate_version.outputs.new_version }}"
           base: master
-          branch: "release/v${{ github.event.inputs.version }}"
+          branch: "release/v${{ steps.calculate_version.outputs.new_version }}"
 
       - name: Upload Artifacts
         id: upload_artifacts
@@ -197,7 +242,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📝 **Pull Request 已创建**: ${{ steps.create_pr.outputs.pull-request-url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🎯 **版本**: v${{ github.event.inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "🎯 **版本**: v${{ steps.calculate_version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # 输出 Artifacts 信息

@@ -25,6 +25,7 @@ from plib.environment import (
     get_packet_path,
     get_packet_dist_path,
 )
+from plib.assert_version import update_assert_version_for_changed_addons
 from plib.language.converter import Converter
 
 
@@ -249,106 +250,15 @@ def __get_version_info(packet: str, diff_ver: Optional[str] = None) -> Dict[str,
     """
     获取版本信息，包括当前版本、最新提交hash及历史版本记录，并从git提交信息中提取release记录。
 
+    此函数现在委托给 plib.git.get_version_info 来实现。
+
     参数：
         packet: 包标识（用于确定Base.lua路径）
         diff_ver: 指定对比版本（可选）
     返回：
-        包含以下字段的字典：
-            "current"           : 当前版本号（从 Base.lua 中获取）
-            "current_hash"      : 当前最新提交的短 hash
-            "max"               : 历史中最大的版本号
-            "previous"          : 上一版本号
-            "previous_message"  : 上一版本的提交信息
-            "previous_hash"     : 上一版本对应的提交 hash
+        包含版本信息的字典
     """
-    current_version: str = ""
-    base_file: str = f"{packet}_!Base/src/lib/Base.lua"
-    try:
-        with open(base_file, "r", encoding="gbk") as f:
-            for line in f:
-                if line.startswith("local _VERSION_ "):
-                    # 去掉前缀并移除引号
-                    current_version = re.sub(
-                        r"(?is)^local _VERSION_\s+=", "", line
-                    ).strip()[1:-1]
-                    break
-    except Exception as e:
-        utils.exit_with_message(f"读取Base.lua文件出错：{e}")
-
-    # 获取当前最新提交短hash
-    current_hash: str = utils.read_popen_output(
-        'git log -n 1 --pretty=format:"%h"'
-    ).strip()
-    # 获取所有包含 release 信息的提交记录（以 SUCCESS|<hash>|release: <version> 格式保存）
-    commit_list: List[str] = utils.read_popen_output(
-        'git log --grep release: --pretty=format:"SUCCESS|%h|%s"'
-    ).split("\n")
-    if diff_ver:
-        extra_commit: str = utils.read_popen_output(
-            f'git log {diff_ver} -n 1 --pretty=format:"SUCCESS|%h|%s"'
-        )
-        commit_list += extra_commit.split("\n")
-    commit_list = list(filter(lambda x: x and x.startswith("SUCCESS|"), commit_list))
-
-    max_version: str = ""
-    prev_version: str = ""
-    prev_version_message: str = ""
-    prev_version_hash: str = ""
-    # 遍历所有提交记录，提取版本号信息，使用 semver 进行版本比较
-    for commit in commit_list:
-        try:
-            parts: List[str] = commit.split("|")
-            if len(parts) < 3:
-                continue
-            version: str = re.sub(r"(?is)^release:\s+", "", parts[2]).strip()
-            version_message: str = parts[2].strip()
-            version_hash: str = parts[1].strip()
-            # 忽略与当前版本相同的记录
-            if semver.compare(version, current_version) == 0:
-                continue
-            if diff_ver:
-                # 若指定对比版本，且两个版本相同则赋值
-                if diff_ver == version and semver.compare(version, "0.0.0") == 1:
-                    max_version = version
-                    prev_version = version
-                    prev_version_message = version_message
-                    prev_version_hash = version_hash
-                    continue
-                if diff_ver.startswith(version_hash):
-                    max_version = "0.0.0"
-                    prev_version = "0.0.0"
-                    prev_version_message = version_message
-                    prev_version_hash = version_hash
-                    continue
-            else:
-                # 若无 diff_ver 指定，则取版本大于"0.0.0"且最大版本号更新的记录
-                if max_version == "" and semver.compare(version, "0.0.0") == 1:
-                    max_version = version
-                    prev_version = version
-                    prev_version_message = version_message
-                    prev_version_hash = version_hash
-                    continue
-                if (
-                    semver.compare(version, current_version) == -1
-                    and semver.compare(version, prev_version) == 1
-                ):
-                    prev_version = version
-                    prev_version_message = version_message
-                    prev_version_hash = version_hash
-                if semver.compare(version, max_version) == 1:
-                    max_version = version
-        except Exception:
-            # 忽略解析错误的记录
-            continue
-
-    return {
-        "current": current_version,
-        "current_hash": current_hash,
-        "max": max_version,
-        "previous": prev_version,
-        "previous_message": prev_version_message,
-        "previous_hash": prev_version_hash,
-    }
+    return git.get_version_info(packet, diff_ver)
 
 
 def __make_changelog(packet: str, packet_path: str, branch: str) -> None:
@@ -566,6 +476,43 @@ def __lint(packet: str, packet_path: str, diff_version: Optional[str] = None) ->
         print("\n提交信息规范检查通过！")
 
 
+def __update_assert_version(version_info: Dict[str, str]) -> None:
+    """
+    更新变更子插件中的 AssertVersion 调用到最新版本
+
+    参数：
+        version_info: 版本信息字典，包含当前版本和变更的子插件文件夹
+    """
+    current_version = version_info.get("current", "")
+    changed_folders = version_info.get("changed_addon_folders", [])
+
+    if not current_version:
+        print("Warning: No current version found, skipping AssertVersion update")
+        return
+
+    if not changed_folders:
+        print("No changed addon folders found, skipping AssertVersion update")
+        return
+
+    print(f"\n正在更新变更子插件的 AssertVersion 调用到版本 {current_version}...")
+    print(f"变更的子插件: {', '.join(changed_folders)}")
+
+    try:
+        files_updated, total_updates = update_assert_version_for_changed_addons(
+            current_version, force_changed=True
+        )
+
+        if total_updates > 0:
+            print(
+                f"AssertVersion 更新完成: 更新了 {files_updated} 个文件，共 {total_updates} 处更新"
+            )
+        else:
+            print("没有需要更新的 AssertVersion 调用")
+
+    except Exception as e:
+        print(f"Warning: AssertVersion 更新过程中出现错误: {e}")
+
+
 def __prepublish(packet: str, packet_path: str, diff_ver: Optional[str] = None) -> None:
     """
     发布前准备工作：
@@ -601,6 +548,7 @@ def __prepublish(packet: str, packet_path: str, diff_ver: Optional[str] = None) 
             == 1,
             f"错误：当前版本({version_info.get('current')})必须大于历史最大版本({version_info.get('max')})！",
         )
+        __update_assert_version(version_info)
         os.system(
             f'git add * && git commit -m "release: {version_info.get("current")}"'
         )
