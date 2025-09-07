@@ -79,6 +79,16 @@ local O = X.CreateUserSettingsModule('MY_ChatBlock', _L['Chat'], {
 		})),
 		xDefaultValue = {},
 	},
+	tBlockHistory = {
+		ePathType = X.PATH_TYPE.GLOBAL,
+		szLabel = _L['MY_ChatBlock'],
+		bDataSet = true,
+		xSchema = X.Schema.Record({
+			nCount = X.Schema.Number,
+			aRecent = X.Schema.Collection(X.Schema.String),
+		}),
+		xDefaultValue = { nCount = 0, aRecent = {} },
+	},
 })
 local D = {}
 
@@ -89,12 +99,12 @@ function D.IsBlockMsg(szText, szMsgType, dwTalkerID)
 	for _, bw in ipairs(D.aBlockWords) do
 		if bw.tMsgType[szMsgType] and (not bAcquaintance or not bw.bIgnoreAcquaintance) then
 			if X.StringSimpleMatch(szText, bw.szKeyword, not bw.bIgnoreCase, not bw.bIgnoreEnEm, bw.bIgnoreSpace) then
-				return true
+				return true, bw.uuid
 			end
 			if bw.bTongName and _G.MY_Farbnamen and _G.MY_Farbnamen.Get then
 				local info = _G.MY_Farbnamen.Get(dwTalkerID)
 				if info and info.szTongName == bw.szKeyword then
-					return true
+					return true, bw.uuid
 				end
 			end
 		end
@@ -108,13 +118,48 @@ function D.OnTalkFilter(nChannel, t, dwTalkerID, szName, bEcho, bOnlyShowBallon,
 		return
 	end
 	local szText = X.StringifyChatText(t)
-	if D.IsBlockMsg(szText, szType, dwTalkerID) then
+	local bBlock, uuid = D.IsBlockMsg(szText, szType, dwTalkerID)
+	if bBlock then
+		if D.bReady and uuid then
+			O.tBlockHistory[uuid].nCount = O.tBlockHistory[uuid].nCount + 1
+			if #O.tBlockHistory[uuid].aRecent >= 10 then
+				table.remove(O.tBlockHistory[uuid].aRecent, 1)
+			end
+			local szType, r, g, b, nFont = X.CONSTANT.PLAYER_TALK_CHANNEL_TO_FONT[nChannel]
+			if szType then
+				nFont = GetMsgFont(szType)
+				r, g, b = GetMsgFontColor(nFont)
+			end
+			table.insert(
+				O.tBlockHistory[uuid].aRecent,
+				X.GetChatTimeXML(GetCurrentTime(), {
+					r = r, g = g, b = b, f = nFont,
+					s = '[%yyyy/%MM/%dd][%hh:%mm:%ss]',
+				}) .. X.XmlifyChatData(t, r, g, b, nFont)
+			)
+			O.tBlockHistory[uuid] = O.tBlockHistory[uuid]
+		end
 		return true
 	end
 end
 
 function D.OnMsgFilter(szMsg, nFont, bRich, r, g, b, szType, dwTalkerID, szName)
-	if D.IsBlockMsg(bRich and GetPureText(szMsg) or szMsg, szType, dwTalkerID) then
+	local bBlock, uuid = D.IsBlockMsg(bRich and GetPureText(szMsg) or szMsg, szType, dwTalkerID)
+	if bBlock then
+		if D.bReady and uuid then
+			O.tBlockHistory[uuid].nCount = O.tBlockHistory[uuid].nCount + 1
+			if #O.tBlockHistory[uuid].aRecent >= 10 then
+				table.remove(O.tBlockHistory[uuid].aRecent, 1)
+			end
+			table.insert(
+				O.tBlockHistory[uuid].aRecent,
+				X.GetChatTimeXML(GetCurrentTime(), {
+					r = r, g = g, b = b, f = nFont,
+					s = '[%yyyy/%MM/%dd][%hh:%mm:%ss]',
+				}) .. (bRich and szMsg or GetFormatText(szMsg, nFont, r, g, b))
+			)
+			O.tBlockHistory[uuid] = O.tBlockHistory[uuid]
+		end
 		return true
 	end
 end
@@ -456,6 +501,27 @@ function PS.OnPanelActive(wnd)
 	end):ListBox('onlclick', function(id, text, data, selected)
 		edit:Text(text)
 	end)
+	:ListBox(
+		'onhover',
+		function(id, text, data, selected)
+			local history = O.tBlockHistory[id]
+			local aXml = {}
+			if history.nCount > 0 then
+				table.insert(aXml, X.GetFormatText(_L('Total %d messages blocked, recently blocked %d:', history.nCount, #history.aRecent), 162, 192, 192, 192))
+				table.insert(aXml, X.CONSTANT.XML_LINE_BREAKER)
+				table.insert(aXml, X.CONSTANT.XML_LINE_BREAKER)
+			else
+				table.insert(aXml, X.GetFormatText(_L('No messages blocked yet.'), 162, 192, 192, 192))
+			end
+			for _, v in ipairs(history.aRecent) do
+				table.insert(aXml, v)
+			end
+			X.OutputTip(X.UI(this):HoverItemRect(), table.concat(aXml, '\n'), true, ALW.BOTTOM_TOP)
+		end,
+		function(id, text, data)
+			HideTip()
+		end
+	)
 	-- add
 	ui:Append('WndButton', {
 		x = nW - 160, y=  0, w = 80,

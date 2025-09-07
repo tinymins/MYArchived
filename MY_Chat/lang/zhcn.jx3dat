@@ -132,6 +132,8 @@ return {
     ['If talker\'s tong name equals with keyword, chat message will be blocked, only apply for target you\'ve met.'] = '如果发言者帮会名称与关键字相同则过滤发言，注意该功能仅对遇见过的侠士生效。',
     ['Edit'] = '编辑',
     ['Please input keyword:'] = '请输入关键字：',
+    ['Total %d messages blocked, recently blocked %d:'] = '该条目已过滤消息总计 %d 条，最近过滤消息 %d 条：',
+    ['No messages blocked yet.'] = '该条目尚未过滤消息。',
     ['Add'] = '添加',
     ['Delete'] = '删除',
 
