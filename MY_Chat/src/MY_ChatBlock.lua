@@ -88,6 +88,7 @@ local O = X.CreateUserSettingsModule('MY_ChatBlock', _L['Chat'], {
 			aRecent = X.Schema.Collection(X.Schema.String),
 		}),
 		xDefaultValue = { nCount = 0, aRecent = {} },
+		bPersistImmediatelyOnChange = false,
 	},
 })
 local D = {}
