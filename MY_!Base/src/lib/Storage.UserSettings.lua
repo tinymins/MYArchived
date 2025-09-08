@@ -84,7 +84,6 @@ local USER_SETTINGS_INFO = {}
 local USER_SETTINGS_LIST = {}
 local USER_SETTINGS_LOCATION_OVERRIDE = {}
 local DATA_CACHE = {}
-local DATA_CACHE_LEAF_FLAG = {}
 local FLUSH_TIME = 0
 local DATABASE_CONNECTION_ESTABLISHED = false
 
@@ -136,6 +135,50 @@ local function DeleteInstanceInfoData(inst, info)
 	local db = GetDB(inst, info)
 	if db then
 		db:Delete(info.szDataKey)
+	end
+end
+
+-- 统一处理配置项存盘逻辑
+---@param inst table 数据库实例
+---@param info table 配置项信息
+---@param szDataSetKey string|number DataSet 键值（可选，仅当配置项为 DataSet 类型时使用）
+---@param xValue any 要保存的值
+---@param bDelete boolean 是否为删除操作
+local function FlushSettingsData(inst, info, szDataSetKey, xValue, bDelete)
+	if info.bDataSet then
+		-- 处理 DataSet 类型的数据
+		if bDelete then
+			-- 删除 DataSet 中的某个键
+			local res = GetInstanceInfoData(inst, info)
+			if X.IsTable(res) and res.v == info.szVersion and X.IsTable(res.d) then
+				res.d[szDataSetKey] = nil
+				if X.IsEmpty(res.d) then
+					DeleteInstanceInfoData(inst, info)
+				else
+					SetInstanceInfoData(inst, info, res.d, info.szVersion)
+				end
+			else
+				DeleteInstanceInfoData(inst, info)
+			end
+		else
+			-- 设置 DataSet 中的某个键
+			local res = GetInstanceInfoData(inst, info)
+			local dataToSave
+			if X.IsTable(res) and res.v == info.szVersion and X.IsTable(res.d) then
+				res.d[szDataSetKey] = xValue
+				dataToSave = res.d
+			else
+				dataToSave = { [szDataSetKey] = xValue }
+			end
+			SetInstanceInfoData(inst, info, dataToSave, info.szVersion)
+		end
+	else
+		-- 处理普通数据
+		if bDelete then
+			DeleteInstanceInfoData(inst, info)
+		else
+			SetInstanceInfoData(inst, info, xValue, info.szVersion)
+		end
 	end
 end
 
@@ -230,6 +273,32 @@ function X.ReleaseUserSettingsDB()
 end
 
 function X.FlushUserSettingsDB()
+	-- 遍历 DATA_CACHE 查找需要 flush 的数据
+	for szKey, cache in pairs(DATA_CACHE) do
+		local info = USER_SETTINGS_INFO[szKey]
+		if info then
+			local inst = DATABASE_INSTANCE[info.ePathType]
+			if inst then
+				if cache.bDataSet then
+					-- 处理 DataSet 类型的数据
+					for szDataSetKey, dataSetCache in pairs(cache.tDataSet) do
+						if dataSetCache.bFlushRequired then
+							FlushSettingsData(inst, info, szDataSetKey, dataSetCache.xValue, dataSetCache.bDeleted)
+							-- 清除 flush 标记
+							dataSetCache.bFlushRequired = nil
+						end
+					end
+				else
+					-- 处理普通数据
+					if cache.bFlushRequired then
+						FlushSettingsData(inst, info, nil, cache.xValue, cache.bDeleted)
+						-- 清除 flush 标记
+						cache.bFlushRequired = nil
+					end
+				end
+			end
+		end
+	end
 	-- for _, ePathType in ipairs(DATABASE_TYPE_LIST) do
 	-- 	local inst = DATABASE_INSTANCE[ePathType]
 	-- 	if inst then
@@ -350,8 +419,9 @@ end
 --   {schema} tOption.xSchema 数据类型约束对象，通过 Schema 库生成
 --   {boolean} tOption.bDataSet 是否为配置项组（如用户多套自定义偏好），配置项组在读写时需要额外传入一个组下配置项唯一键值（即多套自定义偏好中某一项的名字）
 --   {table} tOption.tDataSetDefaultValue 数据默认值（仅当 bDataSet 为真时生效，用于设置配置项组不同默认值）
+--   {boolean} tOption.bPersistImmediatelyOnChange 是否在变更时立即持久化到文件，默认为 true，为 false 时变更会缓存在内存中等待系统空闲时写入
 function X.RegisterUserSettings(szKey, tOption)
-	local ePathType, szDataKey, bUserData, bNoExport, szGroup, szLabel, szDescription, szVersion, szRestriction, xDefaultValue, xSchema, bDataSet, tDataSetDefaultValue, eDefaultLocationOverride
+	local ePathType, szDataKey, bUserData, bNoExport, szGroup, szLabel, szDescription, szVersion, szRestriction, xDefaultValue, xSchema, bDataSet, tDataSetDefaultValue, eDefaultLocationOverride, bPersistImmediatelyOnChange
 	if X.IsTable(tOption) then
 		ePathType = tOption.ePathType
 		szDataKey = tOption.szDataKey
@@ -367,6 +437,7 @@ function X.RegisterUserSettings(szKey, tOption)
 		bDataSet = tOption.bDataSet
 		tDataSetDefaultValue = tOption.tDataSetDefaultValue
 		eDefaultLocationOverride = tOption.eDefaultLocationOverride
+		bPersistImmediatelyOnChange = tOption.bPersistImmediatelyOnChange
 	end
 	if not ePathType then
 		ePathType = X.PATH_TYPE.ROLE
@@ -376,6 +447,9 @@ function X.RegisterUserSettings(szKey, tOption)
 	end
 	if not szVersion then
 		szVersion = ''
+	end
+	if X.IsNil(bPersistImmediatelyOnChange) then
+		bPersistImmediatelyOnChange = true
 	end
 	if not X.IsString(szKey) or szKey == '' then
 		assert(false, 'RegisterUserSettings KEY(' .. X.EncodeLUAData(szKey) .. '): `Key` should be a non-empty string value.')
@@ -442,6 +516,7 @@ function X.RegisterUserSettings(szKey, tOption)
 		bDataSet = bDataSet,
 		tDataSetDefaultValue = tDataSetDefaultValue,
 		eDefaultLocationOverride = eDefaultLocationOverride,
+		bPersistImmediatelyOnChange = bPersistImmediatelyOnChange,
 	}
 	setmetatable(tInfo, {
 		__index = function(t, k)
@@ -505,30 +580,13 @@ end
 -- @param {string} szDataSetKey 配置项组（如用户多套自定义偏好）唯一键，当且仅当 szKey 对应注册项携带 bDataSet 标记位时有效
 -- @return 值
 function X.GetUserSettings(szKey, ...)
-	-- 缓存加速
-	local cache = DATA_CACHE
-	for _, k in ipairs({szKey, ...}) do
-		if X.IsTable(cache) then
-			cache = cache[k]
-		end
-		if not X.IsTable(cache) then
-			cache = nil
-			break
-		end
-		if cache[1] == DATA_CACHE_LEAF_FLAG then
-			return cache[2]
-		end
-	end
 	-- 参数检查
-	local nParameter = select('#', ...) + 1
+	local res, bData, bCache = nil, false, false
 	local info = USER_SETTINGS_INFO[szKey]
 	if not info then
 		assert(false, 'GetUserSettings KEY(' .. X.EncodeLUAData(szKey) .. '): `Key` has not been registered.')
 	end
-	local inst = DATABASE_INSTANCE[info.ePathType]
-	if not inst then
-		assert(false, 'GetUserSettings KEY(' .. X.EncodeLUAData(szKey) .. '): Database not connected.')
-	end
+	local nParameter = select('#', ...) + 1
 	local szDataSetKey
 	if info.bDataSet then
 		if nParameter ~= 2 then
@@ -543,20 +601,44 @@ function X.GetUserSettings(szKey, ...)
 			assert(false, 'GetUserSettings KEY(' .. X.EncodeLUAData(szKey) .. '): 1 parameter expected, got ' .. nParameter)
 		end
 	end
-	-- 读数据库
-	local res, bData = GetInstanceInfoData(inst, info), false
-	if X.IsTable(res) and res.v == info.szVersion then
-		local data = res.d
-		if info.bDataSet then
-			if X.IsTable(data) then
-				data = data[szDataSetKey]
-			else
-				data = nil
-			end
+	-- 缓存加速
+	local cache = DATA_CACHE[szKey]
+	if info.bDataSet and ... then
+		cache = X.IsTable(cache) and cache.bDataSet
+			and cache.tDataSet[...]
+			or nil
+	end
+	if X.IsTable(cache) and cache.bValue then
+		-- 从缓存获取数据，如果标记为删除则返回默认值
+		if cache.bDeleted then
+			-- 数据被删除但还没有 flush，直接返回默认值
+			bData, bCache = false, true
+		else
+			res, bData, bCache = cache.xValue, true, true
 		end
-		if not info.xSchema or not X.Schema.CheckSchema(data, info.xSchema) then
-			bData = true
-			res = data
+	end
+	-- 未命中缓存，从数据库读取
+	if not bCache then
+		-- 参数检查
+		local inst = DATABASE_INSTANCE[info.ePathType]
+		if not inst then
+			assert(false, 'GetUserSettings KEY(' .. X.EncodeLUAData(szKey) .. '): Database not connected.')
+		end
+		-- 读数据库
+		res, bData = GetInstanceInfoData(inst, info), false
+		if X.IsTable(res) and res.v == info.szVersion then
+			local data = res.d
+			if info.bDataSet then
+				if X.IsTable(data) then
+					data = data[szDataSetKey]
+				else
+					data = nil
+				end
+			end
+			if not info.xSchema or not X.Schema.CheckSchema(data, info.xSchema) then
+				bData = true
+				res = data
+			end
 		end
 	end
 	-- 默认值
@@ -571,14 +653,26 @@ function X.GetUserSettings(szKey, ...)
 		end
 		res = X.Clone(res)
 	end
-	-- 缓存
-	if info.bDataSet then
-		if not DATA_CACHE[szKey] then
-			DATA_CACHE[szKey] = {}
+	-- 写入缓存
+	if not bCache then
+		if info.bDataSet then
+			if not DATA_CACHE[szKey] then
+				DATA_CACHE[szKey] = { bDataSet = true, tDataSet = {} }
+			end
+			DATA_CACHE[szKey].tDataSet[szDataSetKey] = {
+				bValue = true,
+				xValue = res,
+				xRawValue = X.Clone(res),
+				bDeleted = false,
+			}
+		else
+			DATA_CACHE[szKey] = {
+				bValue = true,
+				xValue = res,
+				xRawValue = X.Clone(res),
+				bDeleted = false,
+			}
 		end
-		DATA_CACHE[szKey][szDataSetKey] = { DATA_CACHE_LEAF_FLAG, res, X.Clone(res) }
-	else
-		DATA_CACHE[szKey] = { DATA_CACHE_LEAF_FLAG, res, X.Clone(res) }
 	end
 	return res
 end
@@ -612,14 +706,14 @@ function X.SetUserSettings(szKey, ...)
 		if not X.IsString(szDataSetKey) and not X.IsNumber(szDataSetKey) then
 			assert(false, 'SetUserSettings KEY(' .. X.EncodeLUAData(szKey) .. '): `DataSetKey` should be a string or number value.')
 		end
-		cache = cache and cache[szDataSetKey]
+		cache = cache and cache.tDataSet[szDataSetKey]
 	else
 		if nParameter ~= 2 then
 			assert(false, 'SetUserSettings KEY(' .. X.EncodeLUAData(szKey) .. '): 2 parameters expected, got ' .. nParameter)
 		end
 		xValue = ...
 	end
-	if cache and cache[1] == DATA_CACHE_LEAF_FLAG and X.IsEquals(cache[3], xValue) then
+	if cache and cache.bValue and X.IsEquals(cache.xRawValue, xValue) then
 		return
 	end
 	-- 数据校验
@@ -635,20 +729,33 @@ function X.SetUserSettings(szKey, ...)
 	end
 	-- 写数据库
 	if info.bDataSet then
-		local res = GetInstanceInfoData(inst, info)
-		if X.IsTable(res) and res.v == info.szVersion and X.IsTable(res.d) then
-			res.d[szDataSetKey] = xValue
-			xValue = res.d
-		else
-			xValue = { [szDataSetKey] = xValue }
+		-- 更新缓存
+		if not DATA_CACHE[szKey] then
+			DATA_CACHE[szKey] = { bDataSet = true, tDataSet = {} }
 		end
-		if X.IsTable(DATA_CACHE[szKey]) then
-			DATA_CACHE[szKey][szDataSetKey] = nil
+		DATA_CACHE[szKey].tDataSet[szDataSetKey] = {
+			bValue = true,
+			xValue = X.Clone(xValue),
+			xRawValue = X.Clone(xValue),
+			bFlushRequired = not info.bPersistImmediatelyOnChange,
+			bDeleted = false,
+		}
+		if info.bPersistImmediatelyOnChange then
+			FlushSettingsData(inst, info, szDataSetKey, xValue, false)
 		end
 	else
-		DATA_CACHE[szKey] = nil
+		-- 更新缓存
+		DATA_CACHE[szKey] = {
+			bValue = true,
+			xValue = X.Clone(xValue),
+			xRawValue = X.Clone(xValue),
+			bFlushRequired = not info.bPersistImmediatelyOnChange,
+			bDeleted = false,
+		}
+		if info.bPersistImmediatelyOnChange then
+			FlushSettingsData(inst, info, nil, xValue, false)
+		end
 	end
-	SetInstanceInfoData(inst, info, xValue, info.szVersion)
 	-- if info.bUserData then
 	-- 	inst.bUserDataDBCommit = true
 	-- else
@@ -705,24 +812,40 @@ function X.ResetUserSettings(szKey, ...)
 	end
 	-- 写数据库
 	if info.bDataSet then
-		local res = GetInstanceInfoData(inst, info)
-		if X.IsTable(res) and res.v == info.szVersion and X.IsTable(res.d) and szDataSetKey then
-			res.d[szDataSetKey] = nil
-			if X.IsEmpty(res.d) then
-				DeleteInstanceInfoData(inst, info)
-			else
-				SetInstanceInfoData(inst, info, res.d, info.szVersion)
-			end
-			if DATA_CACHE[szKey] then
-				DATA_CACHE[szKey][szDataSetKey] = nil
+		-- 更新缓存
+		if not DATA_CACHE[szKey] then
+			DATA_CACHE[szKey] = { bDataSet = true, tDataSet = {} }
+		end
+		if szDataSetKey then
+			DATA_CACHE[szKey].tDataSet[szDataSetKey] = {
+				bValue = true,
+				xValue = nil,
+				xRawValue = nil,
+				bFlushRequired = not info.bPersistImmediatelyOnChange,
+				bDeleted = true,
+			}
+			if info.bPersistImmediatelyOnChange then
+				FlushSettingsData(inst, info, szDataSetKey, nil, true)
 			end
 		else
-			DeleteInstanceInfoData(inst, info)
+			-- 重置整个 DataSet
 			DATA_CACHE[szKey] = nil
+			if info.bPersistImmediatelyOnChange then
+				FlushSettingsData(inst, info, nil, nil, true)
+			end
 		end
 	else
-		DeleteInstanceInfoData(inst, info)
-		DATA_CACHE[szKey] = nil
+		-- 更新缓存
+		DATA_CACHE[szKey] = {
+			bValue = true,
+			xValue = nil,
+			xRawValue = nil,
+			bFlushRequired = not info.bPersistImmediatelyOnChange,
+			bDeleted = true,
+		}
+		if info.bPersistImmediatelyOnChange then
+			FlushSettingsData(inst, info, nil, nil, true)
+		end
 	end
 	-- if info.bUserData then
 	-- 	inst.bUserDataDBCommit = true

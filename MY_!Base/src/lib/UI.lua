@@ -987,26 +987,30 @@ local function InitComponent(raw, szType)
 	elseif szType == 'WndListBox' then
 		local scroll = raw:Lookup('', 'Handle_Scroll')
 		SetComponentProp(raw, 'OnListItemHandleMouseEnter', function()
+			SetComponentProp(raw, 'hoverItem', this)
+			local bPreventDefault = false
 			local data = GetComponentProp(this, 'listboxItemData')
 			local onHoverIn = GetComponentProp(raw, 'OnListItemHandleCustomHoverIn')
 			if onHoverIn then
 				local bStatus, bRet = X.CallWithThis(raw, onHoverIn, data.id, data.text, data.data, not data.selected)
-				if bStatus and bRet == false then
-					return
-				end
+				bPreventDefault = bStatus and bRet == false
 			end
-			X.UI(this:Lookup('Image_Bg')):FadeIn(100)
+			if not bPreventDefault then
+				X.UI(this:Lookup('Image_Bg')):FadeIn(100)
+			end
 		end)
 		SetComponentProp(raw, 'OnListItemHandleMouseLeave', function()
+			local bPreventDefault = false
 			local data = GetComponentProp(this, 'listboxItemData')
 			local onHoverOut = GetComponentProp(raw, 'OnListItemHandleCustomHoverOut')
 			if onHoverOut then
 				local bStatus, bRet = X.CallWithThis(raw, onHoverOut, data.id, data.text, data.data, not data.selected)
-				if bStatus and bRet == false then
-					return
-				end
+				bPreventDefault = bStatus and bRet == false
 			end
-			X.UI(this:Lookup('Image_Bg')):FadeTo(500,0)
+			if not bPreventDefault then
+				X.UI(this:Lookup('Image_Bg')):FadeTo(500,0)
+			end
+			SetComponentProp(raw, 'hoverItem', nil)
 		end)
 		SetComponentProp(raw, 'OnListItemHandleLButtonClick', function()
 			local data = GetComponentProp(this, 'listboxItemData')
@@ -4221,6 +4225,20 @@ function OO:Pos(nLeft, nTop)
 			return nX, nY
 		end
 	end
+end
+
+-- 获取列表类型界面组件当前悬停的选项绝对位置和尺寸信息
+---@return { x: number, y: number, w: number, h: number } | nil
+function OO:HoverItemRect()
+	self:_checksum()
+	local raw = self.raws[1]
+	local hItem = GetComponentProp(raw, 'hoverItem')
+	if not hItem then
+		return
+	end
+	local x, y = hItem:GetAbsPos()
+	local w, h = hItem:GetSize()
+	return { x, y, w, h }
 end
 
 -- (self) Instance:Shake(xrange, yrange, maxspeed, time)
