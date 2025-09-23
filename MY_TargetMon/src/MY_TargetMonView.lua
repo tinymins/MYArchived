@@ -325,7 +325,7 @@ local function FormatAllItemPosExt(hList)
 	end
 	local W = hList:GetW()
 	local w, h = hItem:GetSize()
-	local columms = math.max(math.floor(W / w), 1)
+	local columns = math.max(math.floor(W / w), 1)
 	local ignoreInvisible = hList:IsIgnoreInvisibleChild()
 	local aItem = {}
 	for i = 0, hList:GetItemCount() - 1 do
@@ -342,9 +342,9 @@ local function FormatAllItemPosExt(hList)
 		elseif align == ALIGNMENT.RIGHT then
 			x, deltaX = W - w, - w
 		elseif align == ALIGNMENT.CENTER then
-			x, deltaX = (W - w * math.min(#aItem, columms)) / 2, w
+			x, deltaX = (W - w * math.min(#aItem, columns)) / 2, w
 		end
-		for i = 1, math.min(#aItem, columms) do
+		for i = 1, math.min(#aItem, columns) do
 			table.remove(aItem, 1):SetRelPos(x, y)
 			x = x + deltaX
 		end
