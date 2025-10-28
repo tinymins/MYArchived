@@ -2148,6 +2148,7 @@ Table_MKungfuIsSection = FunctionType
 Table_NewRoleVideo = FunctionType
 Table_OpenSkillLevel = FunctionType
 Table_ParseCalenderActivity = FunctionType
+Table_ReloadRoleAvatarList = FunctionType
 Table_SchoolToForce = FunctionType
 Table_SetSound = FunctionType
 Table_ViewReplace = FunctionType
