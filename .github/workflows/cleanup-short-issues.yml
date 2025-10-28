@@ -1,0 +1,112 @@
+name: Delete Spam Issues
+
+on:
+  issues:
+    types: [opened, edited]
+  workflow_dispatch:
+    # 允许手动触发
+
+jobs:
+  delete-spam-issues:
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Delete spam issues with short descriptions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Starting deletion of spam issues with short descriptions..."
+
+          # 获取仓库的node ID (用于GraphQL删除操作)
+          repo_info=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY")
+          repo_node_id=$(echo "$repo_info" | jq -r '.node_id')
+
+          # 获取所有开放的issues
+          page=1
+          deleted_count=0
+          while true; do
+            echo "Fetching issues page $page..."
+
+            issues=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/issues?state=open&page=$page&per_page=100")
+
+            # 检查是否还有issues
+            issues_count=$(echo "$issues" | jq '. | length')
+            if [ "$issues_count" = "0" ]; then
+              break
+            fi
+
+            echo "Processing $issues_count issues from page $page..."
+
+            # 遍历每个issue
+            echo "$issues" | jq -r '.[] | select(.pull_request == null) | @base64' | while read -r issue_data; do
+              issue=$(echo "$issue_data" | base64 --decode)
+
+              issue_number=$(echo "$issue" | jq -r '.number')
+              issue_title=$(echo "$issue" | jq -r '.title')
+              issue_body=$(echo "$issue" | jq -r '.body // ""')
+              issue_user=$(echo "$issue" | jq -r '.user.login')
+              issue_node_id=$(echo "$issue" | jq -r '.node_id')
+
+              # 计算标题和描述长度（去除空白字符）
+              title_length=$(echo "$issue_title" | tr -d '[:space:]' | wc -c)
+              body_length=$(echo "$issue_body" | tr -d '[:space:]' | wc -c)
+
+              echo "Issue #$issue_number: '$issue_title' by $issue_user (title: $title_length chars, body: $body_length chars)"
+
+              # 如果标题和描述都少于20个字符，则删除issue
+              if [ "$title_length" -lt 20 ] && [ "$body_length" -lt 20 ]; then
+                echo "Deleting spam issue #$issue_number due to short title ($title_length chars) and description ($body_length chars)"
+
+                # 使用GraphQL API删除issue
+                delete_mutation='{
+                  "query": "mutation { deleteIssue(input: {issueId: \"'$issue_node_id'\"}) { clientMutationId } }"
+                }'
+
+                delete_result=$(curl -s -X POST \
+                  -H "Authorization: token $GITHUB_TOKEN" \
+                  -H "Accept: application/vnd.github.v4+json" \
+                  -H "Content-Type: application/json" \
+                  "https://api.github.com/graphql" \
+                  -d "$delete_mutation")
+
+                # 检查删除结果
+                if echo "$delete_result" | jq -e '.data.deleteIssue' > /dev/null; then
+                  echo "Issue #$issue_number has been successfully deleted"
+                  deleted_count=$((deleted_count + 1))
+                else
+                  echo "Failed to delete issue #$issue_number"
+                  echo "Error: $(echo "$delete_result" | jq -r '.errors[0].message // "Unknown error"')"
+                fi
+              else
+                echo "Issue #$issue_number has sufficient content (title: $title_length chars, body: $body_length chars), keeping it"
+              fi
+            done
+
+            page=$((page + 1))
+          done
+
+          echo "Spam cleanup completed. Deleted $deleted_count issues."
+
+      - name: Report deletion summary
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Spam issue deletion workflow completed successfully"
+          echo "This workflow automatically DELETES issues with BOTH title and description shorter than 20 characters"
+          echo "??  DELETED issues cannot be recovered!"
+          echo "It runs on:"
+          echo "- New issues being opened (immediate deletion of spam)"
+          echo "- Issues being edited (deletion if edited to become too short)"
+          echo "- Manual trigger (on-demand cleanup)"

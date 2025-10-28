@@ -2,7 +2,6 @@
 -- This file is part of the JX3 Mingyi Plugin.
 -- @link     : https://jx3.derzh.com/
 -- @desc     : 目标面向显示 （台服用）
--- @ref      : 参考海鳗插件：目标面向显示
 -- @author   : 茗伊 @双梦镇 @追风蹑影
 -- @modifier : Emil Zhai (root@derzh.com)
 -- @copyright: Copyright (c) 2013 EMZ Kingsoft Co., Ltd.
