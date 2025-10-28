@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 -- This file is part of the JX3 Mingyi Plugin.
--- @link     : https://jx3.derzh.com/
+-- @link     : https://jx3.zhaiyiming.com/
 -- @desc     : 战斗统计 数据源
 -- @author   : 茗伊 @双梦镇 @追风蹑影
--- @modifier : Emil Zhai (root@derzh.com)
+-- @modifier : Emil Zhai (root@zhaiyiming.com)
 -- @copyright: Copyright (c) 2013 EMZ Kingsoft Co., Ltd.
 --------------------------------------------------------------------------------
 local X = MY
@@ -420,42 +420,42 @@ local O = X.CreateUserSettingsModule('MY_Recount', _L['Raid'], {
 
 local function CreateRingBuffer(nCapacity)
     local nActualCap = 2^math.ceil(math.log(nCapacity > 0 and nCapacity or 1, 2))
-    
+
     return {
         data = {},
         nCapacity = nActualCap,
         nStart = 1,
         nCount = 0,
-        
+
         push = function(self, value)
             local nWriteIdx = (self.nStart + self.nCount - 1) % self.nCapacity + 1
-            
+
             self.data[nWriteIdx] = value
-            
+
             if self.nCount < self.nCapacity then
                 self.nCount = self.nCount + 1
             else
                 self.nStart = (self.nStart % self.nCapacity) + 1
             end
         end,
-        
+
         forEach = function(self, callback)
-            if self.nCount <= 0 then 
-				return 
+            if self.nCount <= 0 then
+				return
 			end
-            
+
             local nCap = self.nCapacity
-            
+
             for i = 0, self.nCount - 1 do
                 local nIdx = (self.nStart + i - 1) % nCap + 1
                 callback(self.data[nIdx], i + 1)
             end
         end,
-        
+
         size = function(self)
             return self.nCount
         end,
-        
+
         clear = function(self)
             self.nStart = 1
             self.nCount = 0

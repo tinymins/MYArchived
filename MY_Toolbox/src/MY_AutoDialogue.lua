@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 -- This file is part of the JX3 Mingyi Plugin.
--- @link     : https://jx3.derzh.com/
+-- @link     : https://jx3.zhaiyiming.com/
 -- @desc     : 自动对话（for 台服）
 -- @author   : 茗伊 @双梦镇 @追风蹑影
--- @modifier : Emil Zhai (root@derzh.com)
+-- @modifier : Emil Zhai (root@zhaiyiming.com)
 -- @copyright: Copyright (c) 2013 EMZ Kingsoft Co., Ltd.
 --------------------------------------------------------------------------------
 local X = MY
