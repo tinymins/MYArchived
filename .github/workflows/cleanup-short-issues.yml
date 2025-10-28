@@ -1,0 +1,112 @@
+name: Close Spam Issues
+
+on:
+  issues:
+    types: [opened, edited]
+  workflow_dispatch:
+    # 允许手动触发
+
+jobs:
+  close-spam-issues:
+    runs-on: ubuntu-latest
+
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Close spam issues with short descriptions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "? Starting spam issue cleanup..."
+
+          closed_count=0
+
+          # 使用 GitHub CLI 获取所有开放的 issues
+          echo "? Fetching open issues..."
+
+          # 获取所有开放的 issues (不包括 PR)
+          issues=$(gh issue list --state open --json number,title,body,author --limit 100)
+
+          if [ "$(echo "$issues" | jq '. | length')" = "0" ]; then
+            echo "? No open issues found."
+            exit 0
+          fi
+
+          echo "? Processing $(echo "$issues" | jq '. | length') issues..."
+
+          # 处理每个 issue
+          echo "$issues" | jq -r '.[] | @base64' | while read -r issue_data; do
+            issue=$(echo "$issue_data" | base64 --decode)
+
+            issue_number=$(echo "$issue" | jq -r '.number')
+            issue_title=$(echo "$issue" | jq -r '.title')
+            issue_body=$(echo "$issue" | jq -r '.body // ""')
+            issue_author=$(echo "$issue" | jq -r '.author.login')
+
+            # 计算标题和描述长度（去除空白字符）
+            title_length=$(echo "$issue_title" | tr -d '[:space:]' | wc -c)
+            body_length=$(echo "$issue_body" | tr -d '[:space:]' | wc -c)
+
+            echo "? Issue #$issue_number: '$issue_title' by $issue_author"
+            echo "   ? Title: $title_length chars, Body: $body_length chars"
+
+            # 如果标题和描述都少于20个字符，则关闭issue
+            if [ "$title_length" -lt 20 ] && [ "$body_length" -lt 20 ]; then
+              echo "? Closing spam issue #$issue_number (title: $title_length chars, body: $body_length chars)"
+
+              # 构建评论内容并写入临时文件
+              echo "? This issue has been automatically closed due to insufficient content." > /tmp/comment.txt
+              echo "" >> /tmp/comment.txt
+              echo "**Reason:** Both title and description are too short (less than 20 characters each)" >> /tmp/comment.txt
+              echo "- Title length: $title_length characters" >> /tmp/comment.txt
+              echo "- Description length: $body_length characters" >> /tmp/comment.txt
+              echo "" >> /tmp/comment.txt
+              echo "Please provide more detailed information when creating issues. If this was closed in error, feel free to reopen with additional details." >> /tmp/comment.txt
+              echo "" >> /tmp/comment.txt
+              echo "@tinymins" >> /tmp/comment.txt
+
+              # 使用 GitHub CLI 添加评论
+              if gh issue comment "$issue_number" --body-file /tmp/comment.txt; then
+                echo "? Added comment to issue #$issue_number"
+
+                # 关闭 issue
+                if gh issue close "$issue_number" --reason "not planned"; then
+                  echo "? Closed issue #$issue_number"
+                  closed_count=$((closed_count + 1))
+                else
+                  echo "? Failed to close issue #$issue_number"
+                fi
+              else
+                echo "? Failed to add comment to issue #$issue_number"
+              fi
+            else
+              echo "? Issue #$issue_number has sufficient content, keeping open"
+            fi
+
+            echo "---"
+          done
+
+          echo "? Spam cleanup completed. Closed $closed_count issues."
+
+      - name: Report cleanup summary
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "? Spam issue cleanup workflow completed successfully!"
+          echo ""
+          echo "? This workflow automatically CLOSES issues with insufficient content:"
+          echo "   - Both title AND description must be shorter than 20 characters"
+          echo "   - Issues are closed with 'not planned' reason"
+          echo "   - A comment is added explaining the closure"
+          echo "   - @tinymins is notified in the comment"
+          echo ""
+          echo "? This workflow runs automatically on:"
+          echo "   ? New issues being opened (immediate spam detection)"
+          echo "   ??  Issues being edited (re-evaluation of content)"
+          echo "   ? Manual trigger (batch cleanup via Actions tab)"
+          echo ""
+          echo "? Closed issues can be reopened if they were closed in error."
