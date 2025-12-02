@@ -90,7 +90,7 @@ function X.EncryptString(szText)
 	end
 	table.insert(a, 1, (string.char(dist)))
 	table.insert(a, (string.char(X.NumberBitXor(dist, seed))))
-	return '2,' .. X.Base64Encode(table.concat(a)):gsub('/', '-'):gsub('+', '_'):gsub('=', '.')
+	return '2,' .. X.EncodeBase64(table.concat(a)):gsub('/', '-'):gsub('+', '_'):gsub('=', '.')
 end
 
 function X.DecryptString(szText)
@@ -110,7 +110,7 @@ function X.DecryptString(szText)
 		return
 	end
 	szText = szText:sub(3):gsub('-', '/'):gsub('_', '+'):gsub('%.', '=')
-	szText = X.Base64Decode(szText)
+	szText = X.DecodeBase64(szText)
 	if not szText then
 		return
 	end
@@ -143,11 +143,11 @@ function X.SimpleEncryptString(szText)
 	for i = 1, #szText do
 		a[i] = string.char((szText:byte(i) + 13) % 256)
 	end
-	return (X.Base64Encode(table.concat(a)):gsub('/', '-'):gsub('+', '_'):gsub('=', '.'))
+	return (X.EncodeBase64(table.concat(a)):gsub('/', '-'):gsub('+', '_'):gsub('=', '.'))
 end
 
 function X.SimpleDecryptString(szCipher)
-	local szBin = X.Base64Decode((szCipher:gsub('-', '/'):gsub('_', '+'):gsub('%.', '=')))
+	local szBin = X.DecodeBase64((szCipher:gsub('-', '/'):gsub('_', '+'):gsub('%.', '=')))
 	if not szBin then
 		return
 	end

@@ -11,10 +11,6 @@ local MODULE_PATH = X.NSFormatString('{$NS}_!Base/lib/Semver')
 --[[#DEBUG BEGIN]]X.ReportModuleLoading(MODULE_PATH, 'START')--[[#DEBUG END]]
 --------------------------------------------------------------------------------
 
------------------------------------------------------------------------------------
--- https://raw.githubusercontent.com/danielmgmi/lodash.lua/master/src/lodash.lua --
------------------------------------------------------------------------------------
-
 local semver = {
   _VERSION     = '1.2.1',
   _DESCRIPTION = 'semver for Lua',
