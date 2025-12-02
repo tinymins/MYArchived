@@ -145,7 +145,7 @@ function D.Talk()
 	end
 	D.dwTalkTick = GetTime()
 	-- 近聊不放在第一个会导致发不出去
-	if X.lodash.includes(O.aTalkChannel, PLAYER_TALK_CHANNEL.NEARBY) then
+	if X.Contains(O.aTalkChannel, PLAYER_TALK_CHANNEL.NEARBY) then
 		X.SendChat(PLAYER_TALK_CHANNEL.NEARBY, O.szTalkText)
 	end
 	-- 遍历发送队列
@@ -237,7 +237,7 @@ function PS.OnPanelActive(wnd)
 			x = nW - 110, y = nY + (i - 1) * 120 / nChannelCount,
 			text = g_tStrings.tChannelName[p.szID],
 			color = GetMsgFontColor(p.szID, true),
-			checked = X.lodash.includes(O.aTalkChannel, p.nChannel),
+			checked = X.Contains(O.aTalkChannel, p.nChannel),
 			onCheck = function(bCheck)
 				for i, v in X.ipairs_r(O.aTalkChannel) do
 					if v == p.nChannel then
@@ -409,7 +409,7 @@ function PS.OnPanelActive(wnd)
 	-- 调侃对象范围过滤器
 	nX = nX + ui:Append('WndComboBox', {
 		x = nX, y = nY, w = 100, h = 25,
-		text = X.Get(X.lodash.find(TRICK_FILTER_LIST, function(p) return p.szKey == O.szTrickFilter end), 'szLabel', '???'),
+		text = X.Get(X.Find(TRICK_FILTER_LIST, function(p) return p.szKey == O.szTrickFilter end), 'szLabel', '???'),
 		menu = function()
 			local ui = X.UI(this)
 			local t = {}
@@ -429,7 +429,7 @@ function PS.OnPanelActive(wnd)
 	-- 调侃门派过滤器
 	nX = nX + ui:Append('WndComboBox', {
 		x = nX, y = nY, w = 80, h = 25,
-		text = X.Get(X.lodash.find(FORCE_LIST, function(p) return p.dwForceID == O.nTrickForce end), 'szLabel', '???'),
+		text = X.Get(X.Find(FORCE_LIST, function(p) return p.dwForceID == O.nTrickForce end), 'szLabel', '???'),
 		menu = function()
 			local ui = X.UI(this)
 			local t = {}
@@ -479,8 +479,8 @@ function PS.OnPanelActive(wnd)
 	-- 调侃发送频道
 	nX = nX + ui:Append('WndComboBox', {
 		x = nX, y = nY, w = 'auto', h = 25,
-		text = X.Get(X.lodash.find(TRICK_CHANNEL_LIST, function(p) return p.nChannel == O.nTrickChannel end), 'szName', '???'),
-		color = X.Get(X.lodash.find(TRICK_CHANNEL_LIST, function(p) return p.nChannel == O.nTrickChannel end), 'tCol'),
+		text = X.Get(X.Find(TRICK_CHANNEL_LIST, function(p) return p.nChannel == O.nTrickChannel end), 'szName', '???'),
+		color = X.Get(X.Find(TRICK_CHANNEL_LIST, function(p) return p.nChannel == O.nTrickChannel end), 'tCol'),
 		menu = function()
 			local ui = X.UI(this)
 			local t = {}

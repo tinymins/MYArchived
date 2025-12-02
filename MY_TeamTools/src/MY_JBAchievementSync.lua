@@ -50,7 +50,7 @@ function D.EncodeAchievement()
 	end
 	local szBin = table.concat(aByte)
 	local szCompressBin = X.Deflate:CompressZlib(szBin)
-	local szCompressBinBase64 = X.Base64Encode(szCompressBin)
+	local szCompressBinBase64 = X.EncodeBase64(szCompressBin)
 	return szCompressBinBase64
 end
 

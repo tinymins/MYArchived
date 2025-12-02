@@ -165,7 +165,7 @@ local function UpdateOfficialBuff()
 		for i = 2, nCount do
 			local tLine = RaidPanelBuff:GetRow(i)
 			if (not tLine.dwMapID or tLine.dwMapID == dwMapID or tLine.dwMapID == 0)
-			and (not tLine.szMapID or X.lodash.includes(X.SplitString(tLine.szMapID, ';'), szMapID))
+			and (not tLine.szMapID or X.Contains(X.SplitString(tLine.szMapID, ';'), szMapID))
 			and (not tLine.dwMountKungfuID or tLine.dwMountKungfuID == 0 or X.IsSameKungfu(tLine.dwMountKungfuID, dwMountKungfuID)) then
 				local v = {
 					dwID = tLine.dwBuffID,

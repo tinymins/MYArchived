@@ -550,7 +550,7 @@ function D.UpdateNames(page)
 		end
 		rec.ownerextra = X.DecodeJSON(rec.extra or '') or {}
 	end
-	if result[1] and not X.lodash.some(result, function(r) return r.ownerkey == D.szCurrentOwnerKey end) then
+	if result[1] and not X.Find(result, function(r) return r.ownerkey == D.szCurrentOwnerKey end) then
 		D.szCurrentOwnerKey = result[1].ownerkey
 	end
 	for _, rec in ipairs(result) do

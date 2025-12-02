@@ -734,7 +734,7 @@ function D.UpdateMapProgress(bForceUpdate)
 		if aProgressBoss then
 			-- 强制刷新秘境进度，或者进度数据已过期并且5秒内未请求过，则发起请求
 			if bForceUpdate or (not D.tMapProgressValid[dwID] and GetTime() - D.tMapProgressRequestTime[dwID] > 5000) then
-				if not X.lodash.includes(D.aMapProgressRequestQueue, dwID) then
+				if not X.Contains(D.aMapProgressRequestQueue, dwID) then
 					table.insert(D.aMapProgressRequestQueue, dwID)
 				end
 			end
