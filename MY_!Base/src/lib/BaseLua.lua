@@ -264,6 +264,39 @@ function X.RandomChild(var)
 	end
 end
 
+-- 判断数组是否包含某值
+---@param var table @需要判断的表
+---@param val any @需要判断的值
+---@return boolean @是否包含
+function X.Contains(var, val)
+	if X.IsTable(var) then
+		local iter = X.IsArray(var) and ipairs or pairs
+		for _, v in iter(var) do
+			if v == val then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- 根据回调查找匹配的元素
+---@param var table @需要查找的表
+---@param predicate fun(value: any, key: any, source: table): boolean @判断函数
+---@return any @匹配的元素或 nil
+function X.Find(var, predicate)
+	if not X.IsTable(var) or not X.IsFunction(predicate) then
+		return nil
+	end
+	local iter = X.IsArray(var) and ipairs or pairs
+	for key, value in iter(var) do
+		if predicate(value, key, var) then
+			return value
+		end
+	end
+	return nil
+end
+
 -- 判断数据是否为数组
 ---@param var any @需要判断的数据
 ---@return boolean @是否为数组
