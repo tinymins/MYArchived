@@ -315,7 +315,7 @@ function D.OnTableInsert(dwID, dwBuffID, nLevel, nIcon)
 		local item = D.handle:Lookup(i)
 		if item and item:IsValid() then
 			local nItemSortLFC = item.nSortLFC or 0
-			if nItemSortLFC > nSortLFC then
+			if nItemSortLFC < nSortLFC then
 				nInsertIndex = i + 1
 				break
 			elseif nItemSortLFC == nSortLFC then
