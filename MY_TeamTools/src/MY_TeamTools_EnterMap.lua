@@ -60,12 +60,12 @@ X.RegisterBgMsg('MY_ENTER_MAP', function(_, aData, nChannel, dwTalkerID, szTalke
 			}
 		else
 			local team = GetClientTeam()
-			local info = team.GetMemberInfo(dwTalkerID)
+			local info = X.GetTeamMemberInfo(dwTalkerID)
 			if info then
 				tInfoCache[dwTalkerID] = {
 					szName = info.szName,
 					dwForceID = info.dwForceID,
-					dwMountKungfuID = info.dwMountKungfuID,
+					dwMountKungfuID = info.dwActualMountKungfuID,
 				}
 			end
 		end

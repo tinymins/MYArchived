@@ -163,15 +163,17 @@ local function OnDeath(dwID, dwKiller)
 					szName = me.szName,
 					dwForceID = me.dwForceID,
 					dwMountKungfuID = UI_GetPlayerMountKungfuID(),
+					dwActualMountKungfuID = UI_GetPlayerMountKungfuID(),
 				}
 			else
 				local team = GetClientTeam()
-				local info = team.GetMemberInfo(dwID)
+				local info = X.GetTeamMemberInfo(dwID)
 				if info then
 					INFO_CACHE[dwID] = {
 						szName = info.szName,
 						dwForceID = info.dwForceID,
-						dwMountKungfuID = info.dwMountKungfuID,
+						dwMountKungfuID = info.dwActualMountKungfuID,
+						dwActualMountKungfuID = info.dwActualMountKungfuID,
 					}
 				end
 			end
@@ -233,7 +235,7 @@ function D.UpdatePage(page)
 		local info = INFO_CACHE[dwID]
 		if info then
 			local h = hDeathList:AppendItemFromData(page.hDeathPlayer, 'Handle_DeathPlayer')
-			local icon = select(2, MY_GetSkillName(info.dwMountKungfuID))
+			local icon = select(2, MY_GetSkillName(info.dwActualMountKungfuID))
 			local szName = info.szName
 			h.dwID = dwID
 			h.szName = szName

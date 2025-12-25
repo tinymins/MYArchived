@@ -139,8 +139,8 @@ end
 do
 local function SetObjectAvatar(img, tar, info)
 	if X.IsPlayer(tar.dwID) then
-		if info and info.dwMountKungfuID then
-			img:FromIconID(Table_GetSkillIconID(info.dwMountKungfuID, 1))
+		if info and info.dwActualMountKungfuID then
+			img:FromIconID(Table_GetSkillIconID(info.dwActualMountKungfuID, 1))
 		else
 			local kungfu = tar.GetKungfuMount and tar.GetKungfuMount()
 			if kungfu and kungfu.dwSkillID ~= 0 then

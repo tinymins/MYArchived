@@ -354,9 +354,9 @@ function D.OnBreathe()
 					if dwID == X.GetClientPlayerID() then
 						dwMountKungfuID = UI_GetPlayerMountKungfuID()
 					else
-						local info = GetClientTeam().GetMemberInfo(dwID)
-						if info and not X.IsEmpty(info.dwMountKungfuID) then
-							dwMountKungfuID = info.dwMountKungfuID
+						local info = X.GetTeamMemberInfo(dwID)
+						if info and not X.IsEmpty(info.dwActualMountKungfuID) then
+							dwMountKungfuID = info.dwActualMountKungfuID
 						else
 							local kungfu = kTarget.GetKungfuMount()
 							if kungfu then

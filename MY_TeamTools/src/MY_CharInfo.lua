@@ -92,7 +92,7 @@ function CharInfo.UpdateFrame(frame, status, data)
 			return { 255, 255, 255 }
 		end
 		-- 设置基础属性
-		ui:Children('#Image_Kungfu'):Icon((select(2, X.GetSkillName(data.dwMountKungfuID, 1))))
+		ui:Children('#Image_Kungfu'):Icon((select(2, X.GetSkillName(data.dwActualMountKungfuID or data.dwMountKungfuID, 1))))
 		ui:Children('#Text_Name'):Color({ X.GetForceColor(data.dwForceID) })
 		-- 绘制属性条
 		local y0 = 20
