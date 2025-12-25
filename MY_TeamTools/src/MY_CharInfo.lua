@@ -181,8 +181,16 @@ function D.ViewCharInfoToPlayer(dwID)
 	if not nChannel or not szName then
 		X.Alert(_L['Party limit'])
 	else
-		CharInfo.CreateFrame(dwID, szName)
-		X.SendBgMsg(nChannel, 'CHAR_INFO', {'ASK', dwID, X.IsRestricted('MY_CharInfo.Daddy') and 'DEBUG'})
+		local bAcquaintance = X.IsTeammate(dwID) or X.IsFellowship(dwID) or X.IsAuthorPlayer(X.GetClientPlayerID(), X.GetClientPlayerName())
+		local function onAccept()
+			CharInfo.CreateFrame(dwID, szName)
+			X.SendBgMsg(nChannel, 'CHAR_INFO', {'ASK', dwID, X.IsRestricted('MY_CharInfo.Daddy') and 'DEBUG'})
+		end
+		if bAcquaintance then
+			onAccept()
+		else
+			X.Confirm(_L('[%s] will see your detailed character info request, sure to send request?', szName), onAccept)
+		end
 	end
 end
 
