@@ -149,6 +149,7 @@ function X.GetTeamMemberInfo(dwID)
 				nCamp = info.nCamp,
 				dwForceID = info.dwForceID,
 				dwKungfuID = info.dwMountKungfuID,
+				dwActualMountKungfuID = info.dwActualMountKungfuID or info.dwMountKungfuID,
 				nMaxLife = info.nMaxLife,
 				nCurrentLife = info.nCurrentLife,
 				nMaxMana = info.nMaxMana,

@@ -174,7 +174,7 @@ function X.OutputTeamMemberTip(Rect, dwID, szExtraXml)
 			end
 		end
 		table.insert(xml, GetFormatText(FormatString(g_tStrings.STR_PLAYER_H_WHAT_LEVEL, tMemberInfo.nLevel), 82))
-		table.insert(xml, GetFormatText(X.GetSkillName(tMemberInfo.dwMountKungfuID, 1) .. '\n', 82))
+		table.insert(xml, GetFormatText(X.GetSkillName(tMemberInfo.dwActualMountKungfuID, 1) .. '\n', 82))
 		local szMapName = Table_GetMapName(tMemberInfo.dwMapID)
 		if szMapName then
 			table.insert(xml, GetFormatText(szMapName .. '\n', 82))
