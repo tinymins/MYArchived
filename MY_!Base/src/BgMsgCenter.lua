@@ -126,10 +126,10 @@ X.RegisterBgMsg('CHAR_INFO', function(_, data, nChannel, dwTalkerID, szTalkerNam
 					X.MessageBox('MY_CharInfo', {
 						szMessage = _L('[%s] wants to see your detailed character info, OK?', szTalkerName),
 						{
-							szOption = g_tStrings.STR_HOTKEY_SURE,
+							szOption = g_tStrings.STR_ACCEPT,
 							fnAction = fnResolve,
 						}, {
-							szOption = g_tStrings.STR_HOTKEY_CANCEL,
+							szOption = g_tStrings.STR_REFUSE,
 							fnAction = fnReject,
 						},
 						{
